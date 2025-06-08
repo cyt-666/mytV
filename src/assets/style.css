@@ -1,0 +1,192 @@
+/* 全局样式重置 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 应用布局 */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 0;
+}
+
+/* 页面容器 */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 卡片样式 */
+.media-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.media-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.media-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.media-info {
+  padding: 12px;
+}
+
+.media-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.media-year {
+  font-size: 12px;
+  color: #8e8e93;
+  margin: 0;
+}
+
+.media-rating {
+  font-size: 12px;
+  color: #ff9500;
+  font-weight: 500;
+  margin: 4px 0 0 0;
+}
+
+/* 网格布局 */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+@media (min-width: 768px) {
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+  }
+}
+
+/* 加载状态 */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 状态指示器 */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-watched {
+  background: #e8f5e8;
+  color: #2d8a2d;
+}
+
+.status-watching {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-planned {
+  background: #e7f3ff;
+  color: #0969da;
+}
+
+/* 评分组件 */
+.rating-stars {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.rating-star {
+  color: #ddd;
+  font-size: 14px;
+}
+
+.rating-star.filled {
+  color: #ff9500;
+}
+
+/* 搜索输入框 */
+.search-input {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+  
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+} 

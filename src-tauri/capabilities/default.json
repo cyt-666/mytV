@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:default",
+    "opener:default",
+    "http:default",
+    "store:allow-save",
+    "store:allow-load",
+    "store:default"
+  ]
+}

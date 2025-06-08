@@ -1,0 +1,6 @@
+{
+    "client_id":"a7fafee840258415f54d575b5bb89af426334f5db291f77921e36237d2794ef9",
+    "client_secret":"8d3ce46b1ae2964c567bdf11e3be8ea3aeda91f778386551e5551a0ecc4b6bbe",
+    "redirect_uri":"/oauth/callback",
+    "oauth_port":4396
+}

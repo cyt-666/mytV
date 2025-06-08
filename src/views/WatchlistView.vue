@@ -1,0 +1,243 @@
+<template>
+  <div class="watchlist-view">
+    <div class="page-container">
+      <div class="page-header">
+        <h1 class="page-title">我的观看清单</h1>
+        <p class="page-subtitle">管理你想要观看的电影和电视剧</p>
+      </div>
+
+      <!-- 筛选和排序 -->
+      <div class="toolbar">
+        <a-space :size="16">
+          <a-select
+            v-model="filterType"
+            placeholder="类型筛选"
+            :style="{ width: '120px' }"
+            @change="handleFilterChange"
+          >
+            <a-option value="">全部</a-option>
+            <a-option value="movie">电影</a-option>
+            <a-option value="show">电视剧</a-option>
+          </a-select>
+          
+          <a-select
+            v-model="sortBy"
+            placeholder="排序方式"
+            :style="{ width: '140px' }"
+            @change="handleSortChange"
+          >
+            <a-option value="added_desc">最新添加</a-option>
+            <a-option value="added_asc">最早添加</a-option>
+            <a-option value="title_asc">标题A-Z</a-option>
+            <a-option value="title_desc">标题Z-A</a-option>
+            <a-option value="year_desc">年份新-旧</a-option>
+            <a-option value="year_asc">年份旧-新</a-option>
+          </a-select>
+        </a-space>
+        
+        <a-space :size="12">
+          <span class="item-count">{{ filteredItems.length }} 个项目</span>
+          <a-button type="outline" @click="clearAll" v-if="watchlistItems.length > 0">
+            <icon-delete />
+            清空清单
+          </a-button>
+        </a-space>
+      </div>
+
+      <!-- 内容展示 -->
+      <MediaGrid
+        :items="filteredItems"
+        :loading="loading"
+        :show-meta="true"
+        empty-message="你的观看清单是空的，去发现一些好电影吧！"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { IconDelete } from '@arco-design/web-vue/es/icon'
+import MediaGrid from '../components/MediaGrid.vue'
+import type { Movie, Show } from '../types/api'
+import { usePageState } from '../composables/usePageState'
+
+// 使用状态管理
+const { saveState, restoreState } = usePageState('watchlist')
+
+// 定义组件名称用于keep-alive
+defineOptions({
+  name: 'WatchlistView'
+})
+
+// 响应式数据
+const loading = ref(false)
+const watchlistItems = ref<(Movie | Show)[]>([])
+const filterType = ref('')
+const sortBy = ref('added_desc')
+
+// 计算属性
+const filteredItems = computed(() => {
+  let items = [...watchlistItems.value]
+  
+  // 类型筛选
+  if (filterType.value) {
+    items = items.filter(item => {
+      const isMovie = 'tagline' in item
+      return filterType.value === 'movie' ? isMovie : !isMovie
+    })
+  }
+  
+  // 排序
+  items.sort((a, b) => {
+    switch (sortBy.value) {
+      case 'added_desc':
+        // 按添加时间降序，这里需要从API或本地存储获取添加时间
+        return 0
+      case 'added_asc':
+        return 0
+      case 'title_asc':
+        return a.title.localeCompare(b.title)
+      case 'title_desc':
+        return b.title.localeCompare(a.title)
+      case 'year_desc':
+        return (b.year || 0) - (a.year || 0)
+      case 'year_asc':
+        return (a.year || 0) - (b.year || 0)
+      default:
+        return 0
+    }
+  })
+  
+  return items
+})
+
+// 状态管理
+const saveWatchlistState = () => {
+  const state = {
+    filterType: filterType.value,
+    sortBy: sortBy.value,
+    timestamp: Date.now()
+  }
+  saveState(state)
+}
+
+const restoreWatchlistState = () => {
+  const state = restoreState()
+  if (state && state.timestamp) {
+    // 10分钟内的状态才恢复
+    const tenMinutes = 10 * 60 * 1000
+    if (Date.now() - state.timestamp < tenMinutes) {
+      filterType.value = state.filterType || ''
+      sortBy.value = state.sortBy || 'added_desc'
+      return true
+    }
+  }
+  return false
+}
+
+// 方法
+const loadWatchlist = async () => {
+  loading.value = true
+  try {
+    // 调用API获取观看清单
+    console.log('加载观看清单')
+    // const response = await invoke('get_watchlist')
+    // watchlistItems.value = response
+    watchlistItems.value = []
+  } catch (error) {
+    console.error('加载观看清单失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleFilterChange = () => {
+  // 筛选变化时保存状态
+  saveWatchlistState()
+}
+
+const handleSortChange = () => {
+  // 排序变化时保存状态
+  saveWatchlistState()
+}
+
+const clearAll = () => {
+  // 清空观看清单
+  console.log('清空观看清单')
+  watchlistItems.value = []
+}
+
+// 生命周期
+onMounted(() => {
+  // 恢复状态
+  restoreWatchlistState()
+  
+  loadWatchlist()
+})
+
+// 页面卸载前保存状态
+onBeforeUnmount(() => {
+  saveWatchlistState()
+})
+</script>
+
+<style scoped>
+.watchlist-view {
+  min-height: 100vh;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1d1d1f;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #8e8e93;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.item-count {
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .toolbar > .a-space:first-child {
+    justify-content: center;
+  }
+  
+  .toolbar > .a-space:last-child {
+    justify-content: space-between;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+}
+</style> 
