@@ -143,12 +143,21 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { invoke } from '@tauri-apps/api/core'
+import { Message } from '@arco-design/web-vue'
 import {
   IconSearch, IconClose, IconRefresh
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show, SearchResponse } from '../types/api'
+import type { Movie, Show } from '../types/api'
 import { usePageState } from '../composables/usePageState'
+
+interface SearchResultItem {
+  type: string
+  score: number
+  movie?: Movie
+  show?: Show
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -278,15 +287,23 @@ const performSearch = async () => {
 
   searching.value = true
   try {
-    // 这里调用你的搜索API
-    console.log('搜索:', searchQuery.value)
-    // const response = await invoke('search_media', { query: searchQuery.value })
-    // searchResults.value = response
+    const results = await invoke<SearchResultItem[]>('search_media', { 
+      query: searchQuery.value.trim() 
+    })
     
-    // 临时模拟数据
-    searchResults.value = []
+    const items: (Movie | Show)[] = []
+    for (const result of results) {
+      if (result.movie) {
+        items.push(result.movie)
+      } else if (result.show) {
+        items.push(result.show)
+      }
+    }
+    
+    searchResults.value = items
   } catch (error) {
     console.error('搜索失败:', error)
+    Message.error('搜索失败，请稍后重试')
     searchResults.value = []
   } finally {
     searching.value = false

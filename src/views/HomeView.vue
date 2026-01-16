@@ -117,13 +117,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { 
   IconStarFill, IconPlayArrow, IconPlusCircle 
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse, MovieTrending, ShowTrending } from '../types/api'
+import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse } from '../types/api'
 import { invoke } from "@tauri-apps/api/core";
 import { preloadMovieTranslations } from '../utils/translation'
 import { useHomePageState } from '../composables/usePageState'
@@ -170,16 +170,16 @@ const dataLoaded = ref({
 const trendingMoviesPage = ref(1)
 const trendingShowsPage = ref(1)
 
-// 计算属性
-const currentItems = computed(() => {
-  switch (activeTab.value) {
-    case 'trending': return trendingMovies.value
-    case 'movies': return recommendedMovies.value
-    case 'shows': return recommendedShows.value
-    case 'recent': return recentItems.value
-    default: return []
-  }
-})
+// 计算属性 (currently unused but may be needed for future features)
+// const currentItems = computed(() => {
+//   switch (activeTab.value) {
+//     case 'trending': return trendingMovies.value
+//     case 'movies': return recommendedMovies.value
+//     case 'shows': return recommendedShows.value
+//     case 'recent': return recentItems.value
+//     default: return []
+//   }
+// })
 
 // 方法
 const getHeroBackground = (item: Movie) => {
@@ -243,22 +243,16 @@ const loadTabData = async (tab: string) => {
 const loadFeaturedData = async () => {
   loading.value.featured = true
   try {
-    // 这里调用你的API获取轮播数据
-    // const response = await invoke('get_featured_movies')
-    // featuredMovies.value = response
+    const trendingData = await invoke<MovieTrendingResponse>('movie_trending')
     
-    // 临时模拟数据
-    featuredMovies.value = [
-      {
-        title: '阿凡达：水之道',
-        year: 2022,
-        overview: '杰克·萨利与妮特丽组建了家庭，他们的孩子也逐渐成长，为这个家庭带来了许多欢乐。然而危机未曾消散，萨利一家不得不四处奔波，离开家园，探索潘多拉世界的不同区域。',
-        rating: 7.8,
-        genres: ['科幻', '动作', '冒险'],
-        images: { poster: ['example.com/poster1.jpg'], fanart: ['example.com/fanart1.jpg'] },
-        ids: { trakt: 1, slug: 'avatar-2' }
+    const movies: Movie[] = []
+    for (const item of trendingData.slice(0, 5)) {
+      if (item.movie) {
+        movies.push(item.movie)
       }
-    ]
+    }
+    
+    featuredMovies.value = movies
   } catch (error) {
     console.error('加载轮播数据失败:', error)
   } finally {

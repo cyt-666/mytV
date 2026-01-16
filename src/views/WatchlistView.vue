@@ -57,10 +57,25 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
+import { Message } from '@arco-design/web-vue'
 import { IconDelete } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show } from '../types/api'
 import { usePageState } from '../composables/usePageState'
+import { useAuth } from '../composables/useAuth'
+
+interface WatchlistItem {
+  listed_at: string
+  movie?: Movie
+  show?: Show
+}
+
+interface ExtendedMedia extends Movie, Show {
+  listed_at?: string
+}
+
+const { userInfo } = useAuth()
 
 // 使用状态管理
 const { saveState, restoreState } = usePageState('watchlist')
@@ -72,7 +87,7 @@ defineOptions({
 
 // 响应式数据
 const loading = ref(false)
-const watchlistItems = ref<(Movie | Show)[]>([])
+const watchlistItems = ref<ExtendedMedia[]>([])
 const filterType = ref('')
 const sortBy = ref('added_desc')
 
@@ -92,9 +107,14 @@ const filteredItems = computed(() => {
   items.sort((a, b) => {
     switch (sortBy.value) {
       case 'added_desc':
-        // 按添加时间降序，这里需要从API或本地存储获取添加时间
+        if (a.listed_at && b.listed_at) {
+          return new Date(b.listed_at).getTime() - new Date(a.listed_at).getTime()
+        }
         return 0
       case 'added_asc':
+        if (a.listed_at && b.listed_at) {
+          return new Date(a.listed_at).getTime() - new Date(b.listed_at).getTime()
+        }
         return 0
       case 'title_asc':
         return a.title.localeCompare(b.title)
@@ -125,7 +145,6 @@ const saveWatchlistState = () => {
 const restoreWatchlistState = () => {
   const state = restoreState()
   if (state && state.timestamp) {
-    // 10分钟内的状态才恢复
     const tenMinutes = 10 * 60 * 1000
     if (Date.now() - state.timestamp < tenMinutes) {
       filterType.value = state.filterType || ''
@@ -138,41 +157,64 @@ const restoreWatchlistState = () => {
 
 // 方法
 const loadWatchlist = async () => {
+  if (!userInfo.value?.username) {
+    Message.warning('请先登录')
+    return
+  }
+  
   loading.value = true
   try {
-    // 调用API获取观看清单
-    console.log('加载观看清单')
-    // const response = await invoke('get_watchlist')
-    // watchlistItems.value = response
-    watchlistItems.value = []
+    const movieResults = await invoke<WatchlistItem[]>('get_watchlist', {
+      id: userInfo.value.username,
+      selectType: 'movies'
+    })
+    
+    const showResults = await invoke<WatchlistItem[]>('get_watchlist', {
+      id: userInfo.value.username,
+      selectType: 'shows'
+    })
+    
+    const items: ExtendedMedia[] = []
+    
+    for (const item of movieResults) {
+      if (item.movie) {
+        const extendedMovie = { ...item.movie, listed_at: item.listed_at } as ExtendedMedia
+        items.push(extendedMovie)
+      }
+    }
+    
+    for (const item of showResults) {
+      if (item.show) {
+        const extendedShow = { ...item.show, listed_at: item.listed_at } as ExtendedMedia
+        items.push(extendedShow)
+      }
+    }
+    
+    watchlistItems.value = items
   } catch (error) {
     console.error('加载观看清单失败:', error)
+    Message.error('加载观看清单失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 const handleFilterChange = () => {
-  // 筛选变化时保存状态
   saveWatchlistState()
 }
 
 const handleSortChange = () => {
-  // 排序变化时保存状态
   saveWatchlistState()
 }
 
 const clearAll = () => {
-  // 清空观看清单
-  console.log('清空观看清单')
   watchlistItems.value = []
+  Message.info('清单已清空')
 }
 
 // 生命周期
 onMounted(() => {
-  // 恢复状态
   restoreWatchlistState()
-  
   loadWatchlist()
 })
 

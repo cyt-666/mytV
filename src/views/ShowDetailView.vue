@@ -41,17 +41,33 @@
             
             <!-- 操作按钮 -->
             <div class="action-buttons">
-              <a-button type="primary" size="large" class="action-btn">
+              <a-button 
+                type="primary" 
+                size="large" 
+                class="action-btn"
+                @click="handleMarkAsWatched"
+                :loading="actionLoading.watched"
+              >
                 <icon-play-arrow />
-                播放
+                标记已观看
               </a-button>
-              <a-button size="large" class="action-btn">
+              <a-button 
+                size="large" 
+                class="action-btn"
+                @click="handleToggleCollection"
+                :loading="actionLoading.collection"
+              >
                 <icon-heart />
-                收藏
+                {{ isInCollection ? '取消收藏' : '收藏' }}
               </a-button>
-              <a-button size="large" class="action-btn">
+              <a-button 
+                size="large" 
+                class="action-btn"
+                @click="handleToggleWatchlist"
+                :loading="actionLoading.watchlist"
+              >
                 <icon-bookmark />
-                想看
+                {{ isInWatchlist ? '移出清单' : '想看' }}
               </a-button>
             </div>
           </div>
@@ -208,7 +224,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { 
   IconImage, IconStarFill, IconPlayArrow, IconHeart, 
   IconBookmark, IconExclamationCircle, IconLink
@@ -219,7 +235,6 @@ import type { ShowDetails, MovieImages, Seasons } from '../types/api'
 import { getShowChineseTranslation, getSeasonChineseTranslation, type TranslationResult } from '../utils/translation'
 
 const route = useRoute()
-const router = useRouter()
 
 // 响应式数据
 const showDetails = ref<ShowDetails | null>(null)
@@ -230,8 +245,15 @@ const chineseTranslation = ref<TranslationResult | null>(null)
 const translationLoading = ref(false)
 const seasons = ref<Seasons>([])
 const seasonsLoading = ref(false)
-// 季度翻译存储 - key: season.ids.trakt, value: TranslationResult
 const seasonTranslations = ref<Map<number, TranslationResult>>(new Map())
+
+const isInCollection = ref(false)
+const isInWatchlist = ref(false)
+const actionLoading = ref({
+  collection: false,
+  watchlist: false,
+  watched: false
+})
 
 // 计算属性
 const posterUrl = computed(() => {
@@ -442,6 +464,89 @@ const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   if (target) {
     target.style.display = 'none'
+  }
+}
+
+const handleToggleCollection = async () => {
+  if (!showDetails.value?.ids?.trakt) {
+    Message.error('剧集信息不完整')
+    return
+  }
+  
+  actionLoading.value.collection = true
+  try {
+    if (isInCollection.value) {
+      await invoke('remove_from_collection', {
+        mediaType: 'show',
+        traktId: showDetails.value.ids.trakt
+      })
+      isInCollection.value = false
+      Message.success('已移出收藏')
+    } else {
+      await invoke('add_to_collection', {
+        mediaType: 'show',
+        traktId: showDetails.value.ids.trakt
+      })
+      isInCollection.value = true
+      Message.success('已添加到收藏')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    Message.error('操作失败，请稍后重试')
+  } finally {
+    actionLoading.value.collection = false
+  }
+}
+
+const handleToggleWatchlist = async () => {
+  if (!showDetails.value?.ids?.trakt) {
+    Message.error('剧集信息不完整')
+    return
+  }
+  
+  actionLoading.value.watchlist = true
+  try {
+    if (isInWatchlist.value) {
+      await invoke('remove_from_watchlist', {
+        mediaType: 'show',
+        traktId: showDetails.value.ids.trakt
+      })
+      isInWatchlist.value = false
+      Message.success('已移出观看清单')
+    } else {
+      await invoke('add_to_watchlist', {
+        mediaType: 'show',
+        traktId: showDetails.value.ids.trakt
+      })
+      isInWatchlist.value = true
+      Message.success('已添加到观看清单')
+    }
+  } catch (error) {
+    console.error('观看清单操作失败:', error)
+    Message.error('操作失败，请稍后重试')
+  } finally {
+    actionLoading.value.watchlist = false
+  }
+}
+
+const handleMarkAsWatched = async () => {
+  if (!showDetails.value?.ids?.trakt) {
+    Message.error('剧集信息不完整')
+    return
+  }
+  
+  actionLoading.value.watched = true
+  try {
+    await invoke('mark_as_watched', {
+      mediaType: 'show',
+      traktId: showDetails.value.ids.trakt
+    })
+    Message.success('已标记为观看')
+  } catch (error) {
+    console.error('标记观看失败:', error)
+    Message.error('操作失败，请稍后重试')
+  } finally {
+    actionLoading.value.watched = false
   }
 }
 

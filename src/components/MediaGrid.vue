@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { IconEmpty, IconDown } from '@arco-design/web-vue/es/icon'
 import MediaCard from './MediaCard.vue'
 import type { Movie, Show } from '../types/api'
@@ -130,7 +130,7 @@ const getItemType = (item: Movie | Show): 'movie' | 'show' => {
   return 'show'
 }
 
-const getWatchedStatus = (item: Movie | Show) => {
+const getWatchedStatus = (_item: Movie | Show) => {
   // 这里可以根据用户的观看记录返回状态
   // 从localStorage或API获取用户的观看状态
   return undefined

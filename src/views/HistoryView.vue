@@ -52,7 +52,7 @@
 
       <!-- 历史记录 -->
       <MediaGrid
-        :items="historyItems"
+        :items="filteredItems"
         :loading="loading"
         :show-meta="true"
         empty-message="还没有观看记录"
@@ -62,9 +62,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
+import { Message } from '@arco-design/web-vue'
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show } from '../types/api'
+import { useAuth } from '../composables/useAuth'
+
+interface HistoryItem {
+  id: number
+  watched_at: string
+  type: string
+  movie?: Movie
+  show?: Show
+}
+
+const { userInfo } = useAuth()
 
 const loading = ref(false)
 const historyItems = ref<(Movie | Show)[]>([])
@@ -78,30 +91,76 @@ const stats = ref({
   thisMonth: 0
 })
 
+const filteredItems = computed(() => {
+  let items = [...historyItems.value]
+  
+  if (filterType.value) {
+    items = items.filter(item => {
+      const isMovie = 'tagline' in item
+      return filterType.value === 'movie' ? isMovie : !isMovie
+    })
+  }
+  
+  return items
+})
+
 const loadHistory = async () => {
+  if (!userInfo.value?.username) {
+    Message.warning('请先登录')
+    return
+  }
+  
   loading.value = true
   try {
-    console.log('加载观看历史')
-    // const response = await invoke('get_watch_history')
-    // historyItems.value = response
-    historyItems.value = []
+    const results = await invoke<HistoryItem[]>('get_history', {
+      id: userInfo.value.username
+    })
     
-    // 加载统计数据
+    const items: (Movie | Show)[] = []
+    let movieCount = 0
+    let showCount = 0
+    let totalMinutes = 0
+    
+    for (const item of results) {
+      if (item.movie) {
+        items.push(item.movie)
+        movieCount++
+        if (item.movie.runtime) {
+          totalMinutes += item.movie.runtime
+        }
+      } else if (item.show) {
+        items.push(item.show)
+        showCount++
+        if (item.show.runtime) {
+          totalMinutes += item.show.runtime
+        }
+      }
+    }
+    
+    historyItems.value = items
+    
+    const now = new Date()
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const thisMonthCount = results.filter(item => {
+      const watchedDate = new Date(item.watched_at)
+      return watchedDate >= thisMonth
+    }).length
+    
     stats.value = {
-      totalMovies: 45,
-      totalShows: 23,
-      totalHours: 320,
-      thisMonth: 12
+      totalMovies: movieCount,
+      totalShows: showCount,
+      totalHours: Math.round(totalMinutes / 60),
+      thisMonth: thisMonthCount
     }
   } catch (error) {
     console.error('加载观看历史失败:', error)
+    Message.error('加载观看历史失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
 const handleDateChange = () => {
-  // 根据日期范围筛选历史记录
   console.log('日期范围变化:', dateRange.value)
 }
 

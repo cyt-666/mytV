@@ -62,6 +62,15 @@
             }
         }
     },
+    "search":{
+        "text":{
+            "uri":"/search/movie,show",
+            "method":"GET",
+            "params":{
+                "query":""
+            }
+        }
+    },
     "user":{
         "profile":{
             "uri":"/users/settings",
@@ -77,6 +86,53 @@
             "uri":"/users/id/stats",
             "method":"GET",
             "params":{}
+        },
+        "collection":{
+            "uri":"/users/id/collection/type",
+            "method":"GET",
+            "params":{}
+        },
+        "watchlist":{
+            "uri":"/users/id/watchlist/type",
+            "method":"GET",
+            "params":{}
+        },
+        "history":{
+            "uri":"/users/id/history",
+            "method":"GET",
+            "params":{}
+        }
+    },
+    "sync":{
+        "add_to_collection":{
+            "uri":"/sync/collection",
+            "method":"POST",
+            "content-type":"application/json",
+            "body":{}
+        },
+        "remove_from_collection":{
+            "uri":"/sync/collection/remove",
+            "method":"POST",
+            "content-type":"application/json",
+            "body":{}
+        },
+        "add_to_watchlist":{
+            "uri":"/sync/watchlist",
+            "method":"POST",
+            "content-type":"application/json",
+            "body":{}
+        },
+        "remove_from_watchlist":{
+            "uri":"/sync/watchlist/remove",
+            "method":"POST",
+            "content-type":"application/json",
+            "body":{}
+        },
+        "add_to_history":{
+            "uri":"/sync/history",
+            "method":"POST",
+            "content-type":"application/json",
+            "body":{}
         }
     },
     "movie":{

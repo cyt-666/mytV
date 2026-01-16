@@ -136,7 +136,7 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import type { User, Token } from '../types/api'
+import type { User } from '../types/api'
 
 const router = useRouter()
 const route = useRoute()

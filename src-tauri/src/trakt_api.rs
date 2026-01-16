@@ -3,6 +3,8 @@ pub mod recommand;
 pub mod user;
 pub mod movie;
 pub mod shows;
+pub mod search;
+pub mod sync;
 pub mod translation_cache; 
 
 use auth::refresh_token;
@@ -42,9 +44,11 @@ pub struct Entry {
 pub struct Api {
     pub auth: AuthApi,
     pub recommand: RecommandApi,
+    pub search: SearchApi,
     pub user: UserApi,
     pub movie: MovieApi,
     pub shows: ShowApi,
+    pub sync: SyncApi,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -62,10 +66,18 @@ pub struct RecommandApi {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct SearchApi {
+    pub text: Entry,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct UserApi {
     pub profile: Entry,
     pub watched: Entry,
     pub stats: Entry,
+    pub collection: Entry,
+    pub watchlist: Entry,
+    pub history: Entry,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -82,6 +94,15 @@ pub struct ShowApi {
     pub trans: Entry,
     pub seasons: Entry,
     pub season_trans: Entry,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SyncApi {
+    pub add_to_collection: Entry,
+    pub remove_from_collection: Entry,
+    pub add_to_watchlist: Entry,
+    pub remove_from_watchlist: Entry,
+    pub add_to_history: Entry,
 }
 
 impl Api {
