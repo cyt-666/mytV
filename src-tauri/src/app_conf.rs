@@ -14,13 +14,21 @@ pub struct AppConf {
 
 impl AppConf {
     fn new() -> Self {
-        if env::var("TAURI_ENV_DEBUG").unwrap_or_else(|_| "true".to_string()) == "true" {
-            // 开发环境：从配置文件读取
-            Self::load_from_file()
-        } else {
-            // 生产环境：不允许运行，必须提供外部配置
-            panic!("生产环境必须通过外部方式提供配置，不能从文件读取敏感信息")
+        let client_id = option_env!("TRAKT_CLIENT_ID");
+        let client_secret = option_env!("TRAKT_CLIENT_SECRET");
+        let redirect_uri = option_env!("TRAKT_REDIRECT_URI");
+        let oauth_port = option_env!("TRAKT_OAUTH_PORT");
+
+        if let (Some(id), Some(secret), Some(uri)) = (client_id, client_secret, redirect_uri) {
+            return AppConf {
+                client_id: id.to_string(),
+                client_secret: secret.to_string(),
+                redirect_uri: uri.to_string(),
+                oauth_port: oauth_port.and_then(|p| p.parse().ok()).unwrap_or(4396),
+            };
         }
+
+        Self::load_from_file()
     }
 
     fn load_from_file() -> Self {

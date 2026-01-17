@@ -90,6 +90,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          TRAKT_REDIRECT_URI: ${{ secrets.TRAKT_REDIRECT_URI }}
         with:
           tagName: v${{ needs.check-version.outputs.version }}
           releaseName: 'App v${{ needs.check-version.outputs.version }}'
