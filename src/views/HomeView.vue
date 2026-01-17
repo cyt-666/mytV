@@ -17,8 +17,8 @@
             <div class="hero-slide" :style="getHeroBackground(item)">
               <div class="hero-content">
                 <div class="hero-info">
-                  <h1 class="hero-title">{{ featuredTranslations[item.ids?.trakt]?.title || item.title }}</h1>
-                  <p class="hero-overview">{{ featuredTranslations[item.ids?.trakt]?.overview || item.overview }}</p>
+                  <h1 class="hero-title">{{ (item.ids?.trakt && featuredTranslations[item.ids.trakt]?.title) || item.title }}</h1>
+                  <p class="hero-overview">{{ (item.ids?.trakt && featuredTranslations[item.ids.trakt]?.overview) || item.overview }}</p>
                   <div class="hero-meta">
                     <span v-if="item.year" class="hero-year">{{ item.year }}</span>
                     <span v-if="item.rating" class="hero-rating">

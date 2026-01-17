@@ -114,7 +114,8 @@
               <icon-minus />
             </div>
             <div class="control-btn" @click="maximizeWindow">
-              <icon-fullscreen />
+              <icon-fullscreen-exit v-if="isMaximized" />
+              <icon-fullscreen v-else />
             </div>
             <div class="control-btn close-btn" @click="closeWindow">
               <icon-close />
@@ -142,7 +143,7 @@ import {
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
   IconHome, IconStar, IconBookmark, IconArrowLeft,
   IconMenuFold, IconMenuUnfold,
-  IconMinus, IconFullscreen, IconClose
+  IconMinus, IconFullscreen, IconFullscreenExit, IconClose
 } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
@@ -159,6 +160,7 @@ const collapsed = ref(false)
 const isLoggedIn = ref(false)
 const userInfo = ref<User | null>(null)
 const showGlobalBackButton = ref(false)
+const isMaximized = ref(false) // 追踪最大化状态
 
 const selectedKeys = computed(() => {
   const path = route.path
@@ -247,13 +249,14 @@ const handleGlobalBack = () => {
 // 窗口控制
 const minimizeWindow = () => appWindow.minimize()
 const maximizeWindow = async () => {
-  if (await appWindow.isMaximized()) {
-    appWindow.unmaximize()
-  } else {
-    appWindow.maximize()
-  }
+  await appWindow.toggleMaximize()
+  isMaximized.value = await appWindow.isMaximized()
 }
 const closeWindow = () => appWindow.close()
+
+const updateMaximizeState = async () => {
+  isMaximized.value = await appWindow.isMaximized()
+}
 
 watch(route, (newRoute) => {
   showGlobalBackButton.value = newRoute.path !== '/' && newRoute.path !== '/search'
@@ -275,10 +278,13 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   checkLoginStatus()
   setupOAuthListener()
   document.addEventListener('keydown', handleKeyDown)
+  
+  updateMaximizeState()
+  await listen('tauri://resize', updateMaximizeState)
 })
 
 onBeforeUnmount(() => {
@@ -471,6 +477,7 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-left: 20px;
   gap: 8px; /* 增加按钮间距 */
+  -webkit-app-region: no-drag; /* 双重保险：确保该区域不可拖拽 */
 }
 
 .control-btn {
@@ -496,6 +503,8 @@ onBeforeUnmount(() => {
   color: white;
   box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3); /* 关闭按钮增加阴影 */
 }
+
+.header-left, .header-center { -webkit-app-region: no-drag; }
 
 /* 搜索框 - 胶囊 */
 .search-input { width: 320px; transition: width 0.3s; }
