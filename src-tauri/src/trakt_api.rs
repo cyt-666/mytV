@@ -22,6 +22,7 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use tokio::sync::Mutex;
 use tokio::runtime::Runtime;
+use log::{info, debug, warn, error};
 
 const TRAKT_API_HOST: &str = "https://api.trakt.tv";
 const TRAKT_HOST: &str = "https://trakt.tv";
