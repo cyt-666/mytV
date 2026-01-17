@@ -53,21 +53,25 @@
               </a-button>
               <a-button 
                 size="large" 
-                class="action-btn"
+                :class="['action-btn', { 'is-active': isInCollection }]"
+                :type="isInCollection ? 'primary' : 'secondary'"
+                :status="isInCollection ? 'success' : undefined"
                 @click="handleToggleCollection"
                 :loading="actionLoading.collection"
               >
                 <icon-heart />
-                {{ isInCollection ? '取消收藏' : '收藏' }}
+                {{ isInCollection ? '已入库' : '入库' }}
               </a-button>
               <a-button 
                 size="large" 
-                class="action-btn"
+                :class="['action-btn', { 'is-active': isInWatchlist }]"
+                :type="isInWatchlist ? 'primary' : 'secondary'"
+                :status="isInWatchlist ? 'warning' : undefined"
                 @click="handleToggleWatchlist"
                 :loading="actionLoading.watchlist"
               >
                 <icon-bookmark />
-                {{ isInWatchlist ? '移出清单' : '想看' }}
+                {{ isInWatchlist ? '已想看' : '想看' }}
               </a-button>
             </div>
           </div>
@@ -153,7 +157,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
-  IconImage, IconStarFill, IconPlayArrow, IconHeart, 
+  IconImage, IconStarFill, IconPlayArrow, IconHeart,
   IconBookmark, IconExclamationCircle, IconLink
 } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
@@ -374,7 +378,43 @@ const handleMarkAsWatched = async () => {
 // 生命周期
 onMounted(() => {
   fetchMovieDetails()
+  checkUserStatus()
 })
+
+// 检查用户的收藏和观看清单状态
+const checkUserStatus = async () => {
+  try {
+    const movieId = route.params.id
+    if (!movieId) return
+    
+    const numericId = typeof movieId === 'string' ? parseInt(movieId, 10) : Number(movieId)
+    if (isNaN(numericId)) return
+    
+    // 并行获取用户的 watchlist 和 collection
+    const [watchlistResult, collectionResult] = await Promise.allSettled([
+      invoke<any[]>('get_watchlist', { id: 'me', selectType: 'movies' }),
+      invoke<any[]>('get_collection', { id: 'me', selectType: 'movies' })
+    ])
+    
+    // 检查是否在 watchlist 中
+    if (watchlistResult.status === 'fulfilled' && watchlistResult.value) {
+      isInWatchlist.value = watchlistResult.value.some(
+        (item: any) => item.movie?.ids?.trakt === numericId
+      )
+    }
+    
+    // 检查是否在 collection 中
+    if (collectionResult.status === 'fulfilled' && collectionResult.value) {
+      isInCollection.value = collectionResult.value.some(
+        (item: any) => item.movie?.ids?.trakt === numericId
+      )
+    }
+    
+    console.log('用户状态检查完成:', { isInWatchlist: isInWatchlist.value, isInCollection: isInCollection.value })
+  } catch (error) {
+    console.error('检查用户状态失败:', error)
+  }
+}
 </script>
 
 <style scoped>
@@ -463,6 +503,10 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   font-weight: 600;
+}
+
+.action-btn.is-active {
+  font-weight: 700;
 }
 
 .info-section {

@@ -1,8 +1,48 @@
 use crate::trakt_api::ApiClient;
 use tauri::{command, AppHandle, Manager};
 use crate::trakt_api::API;
-use crate::model::shows::{ShowTrending, Show, ShowDetails, ShowTranslations, Seasons, SeasonTranslations};
+use crate::model::shows::{ShowTrending, Show, ShowDetails, ShowTranslations, Seasons, SeasonTranslations, Episode};
 use tokio::sync::Mutex;
+
+#[command]
+pub async fn get_season_episodes(app: AppHandle, id: u32, season: u32) -> Result<Vec<Episode>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let mut uri = API.shows.season_episodes.uri.clone();
+    uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string());
+    
+    let mut params = API.shows.season_episodes.params.clone().unwrap_or_default();
+    params.insert("extended".to_string(), "full,images".to_string());
+    
+    let result = client.req_api(&app, API.shows.season_episodes.method.as_str(), uri, Some(params), None, None, None, false).await;
+    if let Ok(result) = result {
+        let episodes = serde_json::from_value::<Vec<Episode>>(result).unwrap();
+        Ok(episodes)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: u32) -> Result<Episode, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let mut uri = API.shows.episode_details.uri.clone();
+    uri = uri.replace("id", &id.to_string())
+             .replace("season_number", &season.to_string())
+             .replace("episode_number", &episode.to_string());
+             
+    let mut params = API.shows.episode_details.params.clone().unwrap_or_default();
+    params.insert("extended".to_string(), "full,images".to_string());
+    
+    let result = client.req_api(&app, API.shows.episode_details.method.as_str(), uri, Some(params), None, None, None, false).await;
+    if let Ok(result) = result {
+        let episode_data = serde_json::from_value::<Episode>(result).unwrap();
+        Ok(episode_data)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
 
 #[command]
 pub async fn show_trending(app: AppHandle) -> Result<Vec<ShowTrending>, u16> {

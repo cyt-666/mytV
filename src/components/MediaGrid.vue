@@ -24,6 +24,7 @@
         :type="getItemType(item)"
         :watched-status="getWatchedStatus(item)"
         :show-meta="showMeta"
+        :watch-count="(item as any).watch_count"
       />
     </div>
 
@@ -107,7 +108,12 @@ const getItemType = (item: Movie | Show): 'movie' | 'show' => {
   }
   
   // 自动推断逻辑
-  // 检查是否有电影特有的属性
+  // 0. 检查显式的 media_type 属性
+  if ('media_type' in item && item.media_type) {
+    return item.media_type
+  }
+
+  // 1. 检查是否有电影特有的属性
   if ('tagline' in item && item.tagline !== undefined) {
     return 'movie'
   }

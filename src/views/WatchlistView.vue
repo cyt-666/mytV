@@ -178,14 +178,14 @@ const loadWatchlist = async () => {
     
     for (const item of movieResults) {
       if (item.movie) {
-        const extendedMovie = { ...item.movie, listed_at: item.listed_at } as ExtendedMedia
+        const extendedMovie = { ...item.movie, listed_at: item.listed_at, media_type: 'movie' } as ExtendedMedia
         items.push(extendedMovie)
       }
     }
     
     for (const item of showResults) {
       if (item.show) {
-        const extendedShow = { ...item.show, listed_at: item.listed_at } as ExtendedMedia
+        const extendedShow = { ...item.show, listed_at: item.listed_at, media_type: 'show' } as ExtendedMedia
         items.push(extendedShow)
       }
     }

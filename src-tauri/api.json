@@ -183,6 +183,20 @@
             "uri":"/shows/id/seasons/season_number/translations/language",
             "method":"GET",
             "params":{}
+        },
+        "season_episodes":{
+            "uri":"/shows/id/seasons/season_number",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
+        },
+        "episode_details":{
+            "uri":"/shows/id/seasons/season_number/episodes/episode_number",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
         }
     }
 }

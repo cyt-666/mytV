@@ -59,6 +59,16 @@ pub async fn add_to_collection(
                 }
             ]
         })
+    } else if media_type == "season" {
+        json!({
+            "seasons": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
     } else {
         json!({
             "shows": [
@@ -102,6 +112,16 @@ pub async fn remove_from_collection(
     let body = if media_type == "movie" {
         json!({
             "movies": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
+    } else if media_type == "season" {
+        json!({
+            "seasons": [
                 {
                     "ids": {
                         "trakt": trakt_id
@@ -159,6 +179,16 @@ pub async fn add_to_watchlist(
                 }
             ]
         })
+    } else if media_type == "season" {
+        json!({
+            "seasons": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
     } else {
         json!({
             "shows": [
@@ -209,6 +239,16 @@ pub async fn remove_from_watchlist(
                 }
             ]
         })
+    } else if media_type == "season" {
+        json!({
+            "seasons": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
     } else {
         json!({
             "shows": [
@@ -252,6 +292,26 @@ pub async fn mark_as_watched(
     let body = if media_type == "movie" {
         json!({
             "movies": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
+    } else if media_type == "season" {
+        json!({
+            "seasons": [
+                {
+                    "ids": {
+                        "trakt": trakt_id
+                    }
+                }
+            ]
+        })
+    } else if media_type == "episode" {
+        json!({
+            "episodes": [
                 {
                     "ids": {
                         "trakt": trakt_id

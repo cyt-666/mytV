@@ -4,7 +4,7 @@
       <!-- Hero 轮播区域 -->
       <section class="hero-section">
         <a-carousel
-          :style="{ height: '400px' }"
+          class="hero-carousel"
           :auto-play="{ interval: 5000 }"
           show-arrow="hover"
           indicator-type="dot"
@@ -17,8 +17,8 @@
             <div class="hero-slide" :style="getHeroBackground(item)">
               <div class="hero-content">
                 <div class="hero-info">
-                  <h1 class="hero-title">{{ item.title }}</h1>
-                  <p class="hero-overview">{{ item.overview }}</p>
+                  <h1 class="hero-title">{{ featuredTranslations[item.ids?.trakt]?.title || item.title }}</h1>
+                  <p class="hero-overview">{{ featuredTranslations[item.ids?.trakt]?.overview || item.overview }}</p>
                   <div class="hero-meta">
                     <span v-if="item.year" class="hero-year">{{ item.year }}</span>
                     <span v-if="item.rating" class="hero-rating">
@@ -125,7 +125,7 @@ import {
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse } from '../types/api'
 import { invoke } from "@tauri-apps/api/core";
-import { preloadMovieTranslations } from '../utils/translation'
+import { preloadMovieTranslations, getMovieChineseTranslation, type TranslationResult } from '../utils/translation'
 import { useHomePageState } from '../composables/usePageState'
 
 const router = useRouter()
@@ -143,6 +143,9 @@ defineOptions({
 const activeTab = ref('trending')
 const trendingSubTab = ref('movies')
 const featuredMovies = ref<Movie[]>([])
+// 存储轮播图的翻译数据
+const featuredTranslations = ref<Record<number, TranslationResult>>({})
+
 const trendingMovies = ref<Movie[]>([])
 const trendingShows = ref<Show[]>([])
 const recommendedMovies = ref<Movie[]>([])
@@ -253,6 +256,16 @@ const loadFeaturedData = async () => {
     }
     
     featuredMovies.value = movies
+    
+    // 加载翻译
+    movies.forEach(async (movie) => {
+      if (movie.ids?.trakt) {
+        const trans = await getMovieChineseTranslation(movie.ids.trakt)
+        if (trans) {
+          featuredTranslations.value[movie.ids.trakt] = trans
+        }
+      }
+    })
   } catch (error) {
     console.error('加载轮播数据失败:', error)
   } finally {
@@ -493,47 +506,121 @@ watch(() => route.query.type, (newType, oldType) => {
 <style scoped>
 .home-view {
   min-height: 100vh;
+  /* 移除 page-container 的默认限制，让 Hero 可以撑满 */
 }
 
+/* 覆盖全局样式，让首页更宽 */
+:deep(.page-container) {
+  max-width: 1600px;
+  /* 恢复左右 padding，让内容不贴边 */
+  padding: 0 40px 40px 40px; 
+  padding-top: 0;
+}
+
+/* Hero Section - 沉浸式电影感 */
 .hero-section {
-  margin-bottom: 40px;
-  border-radius: 16px;
+  position: relative;
+  margin-bottom: 48px;
+  /* 关键：悬浮卡片圆角样式 */
+  border-radius: 24px; 
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15); /* 增加悬浮阴影 */
+  transform: translateZ(0); /* 修复 Safari 圆角 */
+  z-index: 10; /* 确保在最上层 */
+}
+
+/* 确保 Carousel 容器也有高度 */
+.hero-carousel {
+  height: 500px;
 }
 
 .hero-slide {
-  height: 400px;
+  height: 100%; /* 跟随 Carousel 高度 */
   position: relative;
   display: flex;
-  align-items: center;
-  color: white;
+  align-items: flex-end; /* 内容沉底 */
+  background-size: cover;
+  background-position: center top;
+}
+
+/* ... */
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 0 60px 48px 60px; /* 减小底部 padding，防止按钮贴底被切 */
+  max-width: 1200px;
+}
+
+.hero-slide {
+  height: 500px; /* 增加高度 */
+  position: relative;
+  display: flex;
+  align-items: flex-end; /* 内容沉底 */
+  background-size: cover;
+  background-position: center top;
+}
+
+/* 渐变遮罩 - 增强文字可读性 */
+.hero-slide::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.9) 0%,
+    rgba(0,0,0,0.5) 40%,
+    rgba(0,0,0,0) 100%
+  );
+  z-index: 1;
+}
+
+/* 左侧遮罩 - 让文字更清晰 */
+.hero-slide::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 50%;
+  background: linear-gradient(to right, rgba(0,0,0,0.8), transparent);
+  z-index: 1;
 }
 
 .hero-content {
+  position: relative;
+  z-index: 2;
   width: 100%;
-  padding: 0 60px;
+  padding: 0 60px 60px 60px; /* 增加内边距 */
+  max-width: 1200px;
 }
 
 .hero-info {
-  max-width: 600px;
+  animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-title {
-  font-size: 48px;
-  font-weight: 700;
+  font-size: 56px; /* 更大标题 */
+  font-weight: 800;
   margin: 0 0 16px 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  color: #fff;
+  line-height: 1.1;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  letter-spacing: -1px;
 }
 
 .hero-overview {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
-  margin: 0 0 20px 0;
-  opacity: 0.9;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  color: rgba(255,255,255,0.9);
+  margin: 0 0 24px 0;
+  max-width: 700px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -541,86 +628,107 @@ watch(() => route.query.type, (newType, oldType) => {
 .hero-meta {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  font-size: 14px;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
-.hero-year,
-.hero-rating,
-.hero-genre {
+.hero-year, .hero-rating, .hero-genre {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 6px 12px;
-  border-radius: 20px;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   backdrop-filter: blur(10px);
 }
 
+.hero-year { background: rgba(255,255,255,0.15); color: #fff; }
+.hero-rating { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+.hero-genre { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+
 .hero-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
+.hero-actions :deep(.arco-btn) {
+  height: 48px;
+  padding: 0 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 24px;
+  border: none;
+  transition: transform 0.2s;
+}
+
+.hero-actions :deep(.arco-btn:hover) {
+  transform: scale(1.05);
+}
+
+.hero-actions :deep(.arco-btn-primary) {
+  background: #165dff;
+  box-shadow: 0 8px 20px rgba(22, 93, 255, 0.4);
+}
+
+.hero-actions :deep(.arco-btn-secondary) {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+/* 分类 Tab */
 .category-tabs {
-  margin-top: 40px;
+  padding: 0 40px; /* 恢复左右边距 */
 }
 
+/* Tab 样式优化 */
+:deep(.arco-tabs-nav::before) { display: none; } /* 去掉灰线 */
+:deep(.arco-tabs-tab) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #86909c;
+  padding: 12px 0;
+  margin-right: 40px;
+}
+:deep(.arco-tabs-tab-active) {
+  color: #1d1d1f;
+  font-weight: 800;
+}
+:deep(.arco-tabs-nav-ink) {
+  background-color: #165dff;
+  height: 3px;
+  border-radius: 3px;
+  bottom: 0;
+}
+
+/* 子 Tab 样式 */
 .trending-sub-tabs {
-  margin-top: 16px;
+  margin-top: 24px;
 }
-
-.trending-sub-tabs .arco-tabs-nav {
-  margin-bottom: 20px;
-}
-
-.trending-sub-tabs .arco-tabs-tab {
+.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab) {
+  background-color: transparent;
+  border: 1px solid #e5e6eb;
+  border-radius: 20px;
+  margin-right: 12px;
+  height: 36px;
+  line-height: 34px;
+  padding: 0 20px;
   font-size: 14px;
-  font-weight: 500;
+  color: #4e5969;
+}
+.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab-active) {
+  background-color: #1d1d1f;
+  color: #fff;
+  border-color: #1d1d1f;
 }
 
-/* 响应式设计 */
+/* 响应式 */
 @media (max-width: 768px) {
-  .hero-slide {
-    height: 300px;
-  }
-  
-  .hero-content {
-    padding: 0 24px;
-  }
-  
-  .hero-title {
-    font-size: 32px;
-  }
-  
-  .hero-overview {
-    font-size: 14px;
-    -webkit-line-clamp: 2;
-  }
-  
-  .hero-meta {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .hero-actions .a-btn {
-    width: fit-content;
-  }
+  .hero-slide { height: 400px; }
+  .hero-content { padding: 0 24px 40px 24px; }
+  .hero-title { font-size: 32px; }
+  .hero-overview { font-size: 14px; }
+  .category-tabs { padding: 0 20px; }
 }
-
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 24px;
-  }
-  
-  .hero-actions {
-    gap: 8px;
-  }
-}
-</style> 
+</style>

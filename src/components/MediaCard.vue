@@ -1,5 +1,6 @@
 <template>
   <div 
+    ref="cardRef"
     class="media-card"
     @click="handleClick"
   >
@@ -27,6 +28,11 @@
         <icon-play-circle v-else-if="watchedStatus === 'watching'" />
         <icon-clock-circle v-else />
       </div>
+
+      <!-- 观看次数 -->
+      <div v-if="watchCount > 1" class="count-badge">
+        {{ type === 'movie' ? `刷${watchCount}遍` : `${watchCount}集` }}
+      </div>
     </div>
     
     <div class="media-info">
@@ -50,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IconImage, IconStarFill, IconCheckCircle, 
@@ -64,13 +70,17 @@ interface Props {
   type: 'movie' | 'show'
   watchedStatus?: 'watched' | 'watching' | 'planned'
   showMeta?: boolean
+  watchCount?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showMeta: false
+  showMeta: false,
+  watchCount: 0
 })
 
 const router = useRouter()
+const cardRef = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 // 翻译状态
 const translation = ref<TranslationResult | null>(null)
@@ -101,6 +111,18 @@ const handleClick = () => {
   // 优先使用 trakt ID（数字），因为后端API需要u32类型
   const id = props.media.ids?.trakt || props.media.ids?.slug
   
+  console.log('MediaCard clicked:', { 
+    type: props.type, 
+    title: props.media.title, 
+    ids: props.media.ids,
+    id 
+  })
+  
+  if (!id) {
+    console.error('无法跳转：缺少有效的ID', props.media)
+    return
+  }
+  
   // 将图片信息存储到sessionStorage供详情页使用
   if (props.media.images) {
     const cacheKey = `media_images_${id}`
@@ -127,63 +149,90 @@ const formatRuntime = (minutes: number) => {
   return `${mins}m`
 }
 
-// 生命周期
-onMounted(() => {
-  // 为电影和电视剧加载翻译
-  // 添加随机延迟，避免同时发起太多请求
-  const delay = Math.random() * 2000 // 0-2秒随机延迟，分散请求
-  
-  const loadTranslation = async () => {
-    try {
-      translationLoading.value = true
-      
-      if (props.type === 'movie') {
-        loadMovieTranslationAsync(props.media as Movie, (translationData: TranslationResult | null) => {
-          translation.value = translationData
-          translationLoading.value = false
-        })
-      } else if (props.type === 'show') {
-        loadShowTranslationAsync(props.media as Show, (translationData: TranslationResult | null) => {
-          translation.value = translationData
-          translationLoading.value = false
-        })
-      } else {
-        // 对于其他类型，直接关闭加载状态
+const loadTranslation = async () => {
+  try {
+    // 检查是否已经在加载或已加载
+    if (translation.value || translationLoading.value) return
+    
+    translationLoading.value = true
+    
+    // 添加小延迟，避免IntersectionObserver同时也触发大量并发
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 500))
+    
+    if (props.type === 'movie') {
+      loadMovieTranslationAsync(props.media as Movie, (translationData: TranslationResult | null) => {
+        translation.value = translationData
         translationLoading.value = false
-      }
-      
-      // 安全网：如果5秒后还在加载，就停止加载状态
-      setTimeout(() => {
-        if (translationLoading.value) {
-          console.warn('翻译加载超时，停止加载状态:', props.media.title)
-          translationLoading.value = false
-        }
-      }, 5000)
-      
-    } catch (error) {
-      console.warn('翻译加载失败:', error)
+      })
+    } else if (props.type === 'show') {
+      loadShowTranslationAsync(props.media as Show, (translationData: TranslationResult | null) => {
+        translation.value = translationData
+        translationLoading.value = false
+      })
+    } else {
+      // 对于其他类型，直接关闭加载状态
       translationLoading.value = false
     }
+    
+    // 安全网：如果8秒后还在加载，就停止加载状态
+    setTimeout(() => {
+      if (translationLoading.value) {
+        // console.warn('翻译加载超时，停止加载状态:', props.media.title)
+        translationLoading.value = false
+      }
+    }, 8000)
+    
+  } catch (error) {
+    console.warn('翻译加载失败:', error)
+    translationLoading.value = false
   }
-  
-  setTimeout(loadTranslation, delay)
+}
+
+// 生命周期
+onMounted(() => {
+  if (cardRef.value) {
+    observer = new IntersectionObserver((entries) => {
+      const [entry] = entries
+      if (entry.isIntersecting) {
+        loadTranslation()
+        if (observer) {
+          observer.disconnect()
+          observer = null
+        }
+      }
+    }, {
+      rootMargin: '100px' // 提前100px加载
+    })
+    
+    observer.observe(cardRef.value)
+  } else {
+    // 降级处理：如果没有ref，直接加载
+    loadTranslation()
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
 })
 </script>
 
 <style scoped>
 .media-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
   position: relative;
+  background: transparent; /* 卡片本身透明，由图片撑起 */
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* 解决 Safari 圆角溢出 */
+  transform: translateZ(0); 
 }
 
 .media-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05) translateY(-4px); /* 放大并上浮 */
+  z-index: 10;
 }
 
 .poster-container {
@@ -191,49 +240,66 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 2/3;
   overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 默认柔和阴影 */
+  transition: box-shadow 0.4s ease;
+  background: #f0f0f0;
+}
+
+.media-card:hover .poster-container {
+  box-shadow: 0 16px 32px rgba(0,0,0,0.25); /* 悬停深邃阴影 */
 }
 
 .media-poster {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
 }
 
-.media-card:hover .media-poster {
-  transform: scale(1.05);
-}
+/* 悬停时图片不放大，而是整体放大，保持清晰 */
+/* .media-card:hover .media-poster { transform: scale(1.05); } */
 
 .poster-placeholder {
   width: 100%;
   height: 100%;
-  background: #f5f5f5;
+  background: #f5f5f7;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #bbb;
+  color: #86909c;
 }
 
+/* 标签样式优化 */
 .rating-badge {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: #ffc107;
   padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  opacity: 0; /* 默认隐藏 */
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+}
+
+.media-card:hover .rating-badge {
+  opacity: 1; /* 悬停显示 */
+  transform: translateY(0);
 }
 
 .status-badge {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(22, 93, 255, 0.9);
   color: white;
   padding: 4px;
   border-radius: 50%;
@@ -242,66 +308,70 @@ onMounted(() => {
   justify-content: center;
   width: 24px;
   height: 24px;
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.4);
+}
+
+.count-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .media-info {
-  padding: 12px;
+  padding: 12px 4px;
 }
 
 .media-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   margin: 0 0 4px 0;
   line-height: 1.4;
+  color: #1d1d1f;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1; /* 单行显示，整洁 */
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: #1d1d1f;
+  text-overflow: ellipsis;
   position: relative;
+  transition: color 0.2s;
 }
 
-.translation-indicator {
-  position: absolute;
-  top: -2px;
-  right: -6px;
+.media-card:hover .media-title {
+  color: #165dff; /* 悬停变色 */
 }
 
 .translation-dot {
-  width: 4px;
-  height: 4px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
   background: #165dff;
   border-radius: 50%;
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { 
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 1;
-    transform: scale(1.2);
-  }
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 .media-year {
-  font-size: 12px;
-  color: #8e8e93;
-  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #86909c;
+  margin: 0;
 }
 
 .media-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .genre-tag {
-  background: #f0f0f0;
-  color: #666;
+  background: #f2f3f5;
+  color: #4e5969;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
@@ -310,28 +380,13 @@ onMounted(() => {
 
 .runtime {
   font-size: 11px;
-  color: #999;
+  color: #86909c;
 }
 
-/* 响应式设计 */
+/* 响应式 */
 @media (max-width: 768px) {
-  .media-title {
-    font-size: 13px;
-  }
-  
-  .media-info {
-    padding: 10px;
-  }
-  
-  .rating-badge,
-  .status-badge {
-    top: 6px;
-  }
-  
-  .rating-badge {
-    right: 6px;
-    padding: 3px 6px;
-    font-size: 11px;
-  }
+  .media-title { font-size: 13px; }
+  .media-info { padding: 8px 0; }
+  .rating-badge { opacity: 1; } /* 移动端常驻 */
 }
-</style> 
+</style>

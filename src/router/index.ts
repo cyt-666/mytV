@@ -27,6 +27,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '电视剧详情' }
   },
   {
+    path: '/show/:id/season/:season',
+    name: 'season-detail',
+    component: () => import('../views/SeasonDetailView.vue'),
+    meta: { title: '季度详情' }
+  },
+  {
+    path: '/show/:id/season/:season/episode/:episode',
+    name: 'episode-detail',
+    component: () => import('../views/EpisodeDetailView.vue'),
+    meta: { title: '剧集详情' }
+  },
+  {
     path: '/watchlist',
     name: 'watchlist',
     component: () => import('../views/WatchlistView.vue'),

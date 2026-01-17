@@ -1,0 +1,230 @@
+<template>
+  <div class="episode-detail-view">
+    <div class="page-container">
+      <div v-if="loading" class="loading-container">
+        <a-spin :size="40" />
+        <p>加载中...</p>
+      </div>
+      
+      <div v-else-if="error" class="error-container">
+        <icon-exclamation-circle :size="48" style="color: #f53f3f; margin-bottom: 16px;" />
+        <h3>{{ error }}</h3>
+        <a-button @click="loadEpisode" type="primary">重试</a-button>
+      </div>
+      
+      <div v-else-if="episode" class="episode-content">
+        <div class="main-section">
+          <div class="screenshot-wrapper">
+            <img v-if="screenshotUrl" :src="screenshotUrl" :alt="episode.title" class="screenshot" />
+            <div v-else class="screenshot-placeholder">
+              <icon-image :size="60" />
+            </div>
+          </div>
+          
+          <div class="info-wrapper">
+            <h1 class="episode-title">
+              <span class="episode-number">{{ episode.number }}.</span>
+              {{ episode.title }}
+            </h1>
+            
+            <div class="meta-row">
+              <span class="season-tag">第 {{ episode.season }} 季</span>
+              <span v-if="episode.first_aired" class="air-date">{{ formatDate(episode.first_aired) }}</span>
+              <span v-if="episode.runtime" class="runtime">{{ formatRuntime(episode.runtime) }}</span>
+              <span v-if="episode.rating" class="rating">
+                <icon-star-fill style="color: #faad14" /> {{ episode.rating.toFixed(1) }}
+              </span>
+            </div>
+            
+            <p class="overview" v-if="episode.overview">{{ episode.overview }}</p>
+            <p class="overview" v-else>暂无简介</p>
+            
+            <div class="actions">
+              <a-button type="primary" status="success" @click="markWatched">
+                <template #icon><icon-check /></template>
+                标记为已观看
+              </a-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { invoke } from '@tauri-apps/api/core'
+import { Message } from '@arco-design/web-vue'
+import { IconImage, IconStarFill, IconCheck, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
+import type { Episode } from '../types/api'
+
+const route = useRoute()
+
+const loading = ref(false)
+const error = ref('')
+const episode = ref<Episode | null>(null)
+
+const screenshotUrl = computed(() => {
+  if (episode.value?.images?.screenshot?.length) {
+    const path = episode.value.images.screenshot[0]
+    return path.startsWith('http') ? path : `https://${path}`
+  }
+  return null
+})
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('zh-CN')
+}
+
+const formatRuntime = (minutes: number) => {
+  return `${minutes}分钟`
+}
+
+const loadEpisode = async () => {
+  const { id, season, episode: epNum } = route.params
+  if (!id || !season || !epNum) {
+    error.value = '参数错误'
+    return
+  }
+  
+  loading.value = true
+  error.value = ''
+  
+  try {
+    const result = await invoke<Episode>('get_episode_details', {
+      id: Number(id),
+      season: Number(season),
+      episode: Number(epNum)
+    })
+    episode.value = result
+  } catch (err) {
+    console.error('加载剧集详情失败:', err)
+    error.value = '加载失败，请稍后重试'
+  } finally {
+    loading.value = false
+  }
+}
+
+const markWatched = async () => {
+  if (!episode.value?.ids?.trakt) return
+  
+  try {
+    await invoke('mark_as_watched', {
+      mediaType: 'episode',
+      traktId: episode.value.ids.trakt
+    })
+    Message.success('已标记为观看')
+  } catch (err) {
+    console.error('标记观看失败:', err)
+    Message.error('操作失败')
+  }
+}
+
+onMounted(() => {
+  loadEpisode()
+})
+</script>
+
+<style scoped>
+.episode-detail-view {
+  min-height: 100vh;
+  background: #f7f8fa;
+  padding-bottom: 40px;
+}
+
+.page-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  color: #86909c;
+}
+
+.navigation-bar {
+  margin-bottom: 20px;
+}
+
+.main-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.screenshot-wrapper {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  position: relative;
+}
+
+.screenshot {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.screenshot-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eee;
+  color: #ccc;
+}
+
+.info-wrapper {
+  padding: 32px;
+}
+
+.episode-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: #1d1d1f;
+}
+
+.episode-number {
+  color: #86909c;
+  margin-right: 8px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #4e5969;
+}
+
+.season-tag {
+  background: #e8f3ff;
+  color: #165dff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.overview {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #4e5969;
+  margin-bottom: 32px;
+}
+
+.actions {
+  border-top: 1px solid #f2f3f5;
+  padding-top: 24px;
+}
+</style>

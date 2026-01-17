@@ -8,8 +8,9 @@ pub mod sync;
 pub mod translation_cache; 
 
 use auth::refresh_token;
-use tauri::{http::{HeaderMap, HeaderValue, Method}, AppHandle, Manager};
-use tauri_plugin_http::reqwest::{Client, ClientBuilder, RequestBuilder};
+use tauri::{AppHandle, Manager};
+use reqwest::{Client, ClientBuilder, RequestBuilder};
+use reqwest::header::{HeaderMap, HeaderValue};
 use tauri_plugin_store::StoreExt;
 use url::Url;
 use std::time::Duration;
@@ -94,6 +95,8 @@ pub struct ShowApi {
     pub trans: Entry,
     pub seasons: Entry,
     pub season_trans: Entry,
+    pub season_episodes: Entry,
+    pub episode_details: Entry,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -123,9 +126,13 @@ impl ApiClient {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
         headers.insert("trakt-api-version", HeaderValue::from_static("2"));
-        headers.insert("trakt-api-key", HeaderValue::from_str(&get_config().client_id).unwrap());
+        
+        let client_id = get_config().client_id.clone();
+        println!("使用 Client ID (前8位): {}...", &client_id[..8.min(client_id.len())]);
+        headers.insert("trakt-api-key", HeaderValue::from_str(&client_id).unwrap());
+        
         let client = if let Some(token) = token {
-            println!("true");
+            println!("检测到 Token，使用认证模式");
             let rt = Runtime::new().unwrap();
             let token = rt.block_on(token.lock());
             headers.insert("Authorization", HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str()).unwrap());
@@ -136,7 +143,7 @@ impl ApiClient {
                     .unwrap();
             ApiClient { client, authenticated: true }
         } else {
-            println!("false");
+            println!("未检测到 Token，使用未认证模式");
             let client = ClientBuilder::new()
                 .connect_timeout(Duration::from_secs(5))
                 .default_headers(headers)
@@ -165,6 +172,12 @@ impl ApiClient {
         if let Some(page) = page {
             url.query_pairs_mut().append_pair("page", page.to_string().as_str());
         }
+        
+        println!("=== API 请求详情 ===");
+        println!("URL: {}", url.as_str());
+        println!("Method: {}", method);
+        println!("Authenticated: {}", self.authenticated);
+        
         let method = method.to_lowercase();
         let mut req: RequestBuilder;
         match method.as_str() {
@@ -174,27 +187,62 @@ impl ApiClient {
                         url.query_pairs_mut().append_pair(key.as_str(), value.as_str());
                     }
                 }
-                req = self.client.request(Method::GET, url.clone());
+                req = self.client.get(url.clone())
+                    .header("Content-Type", "application/json")
+                    .header("trakt-api-version", "2")
+                    .header("trakt-api-key", get_config().client_id.as_str())
+                    .header("User-Agent", "MyTV/1.0");
             }
             "post" => {
-                req = self.client.request(Method::POST, url.clone());
+                req = self.client.post(url.clone())
+                    .header("Content-Type", "application/json")
+                    .header("trakt-api-version", "2")
+                    .header("trakt-api-key", get_config().client_id.as_str())
+                    .header("User-Agent", "MyTV/1.0");
             }
             "put" => {
-                req = self.client.request(Method::PUT, url.clone());
+                req = self.client.put(url.clone())
+                    .header("Content-Type", "application/json")
+                    .header("trakt-api-version", "2")
+                    .header("trakt-api-key", get_config().client_id.as_str())
+                    .header("User-Agent", "MyTV/1.0");
             }
             "delete" => {
-                req = self.client.request(Method::DELETE, url.clone());
+                req = self.client.delete(url.clone())
+                    .header("Content-Type", "application/json")
+                    .header("trakt-api-version", "2")
+                    .header("trakt-api-key", get_config().client_id.as_str())
+                    .header("User-Agent", "MyTV/1.0");
             }
             _ => {
                 return Err(405);
             }
         }
+        
+        if self.authenticated {
+            println!("=== 添加认证头 ===");
+            if let Some(token_state) = app.try_state::<Mutex<Token>>() {
+                let token = token_state.lock().await;
+                println!("Token access_token (前20字符): {}...", &token.access_token[..20.min(token.access_token.len())]);
+                req = req.header("Authorization", format!("Bearer {}", token.access_token));
+            } else {
+                println!("警告: authenticated=true 但找不到 Token state!");
+            }
+        } else {
+            println!("=== 未认证模式，不添加 Authorization 头 ===");
+        }
         if let Some(body) = body {
             let body = serde_json::to_string(&body).unwrap();
-            println!("请求体 {:?}", &body);
+            println!("请求体: {:?}", &body);
             req = req.body(body);
         }
         let req = req.build().unwrap();
+        
+        println!("=== 请求 Headers ===");
+        for (name, value) in req.headers() {
+            println!("{}: {:?}", name, value);
+        }
+        
         let resp = self.client.execute(req).await;
         match resp {
             Ok(resp) => {
@@ -212,15 +260,31 @@ impl ApiClient {
                 } else {
                     let status = resp.status().as_u16();
                     if status == 401 {
-                        println!("401");
+                        println!("收到 401 响应，尝试刷新 token");
                         let result = refresh_token(app).await;
                         if let Ok(token) = result {
-                            println!("刷新token {:?}", &token);
+                            println!("刷新token成功: {:?}", &token);
                             self.refresh_client(Some(token));
+                            // Token 刷新成功，但不自动重试请求
+                            // 让调用者处理重试逻辑
                         } else {
-                            println!("刷新token失败 {:?}", &result);
+                            println!("刷新token失败: {:?}", &result);
+                            // 清除存储中的无效 token
                             let store = app.store("app_data.json").unwrap();
                             let _ = store.delete("token");
+                            
+                            // 清除应用状态中的 token
+                            if let Some(token_state) = app.try_state::<Mutex<Token>>() {
+                                let mut t = token_state.lock().await;
+                                *t = Token {
+                                    access_token: String::new(),
+                                    token_type: String::new(),
+                                    expires_in: 0,
+                                    refresh_token: String::new(),
+                                    scope: String::new(),
+                                    created_at: 0,
+                                };
+                            }
                         }
                     }
                     Err(status)
@@ -235,10 +299,11 @@ impl ApiClient {
     pub fn refresh_client(&mut self, token: Option<Token>) {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+        headers.insert("trakt-api-version", HeaderValue::from_static("2"));
+        headers.insert("trakt-api-key", HeaderValue::from_str(&get_config().client_id).unwrap());
+        
         if let Some(token) = token {
             headers.insert("Authorization", HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str()).unwrap());
-            headers.insert("trakt-api-version", HeaderValue::from_static("2"));
-            headers.insert("trakt-api-key", HeaderValue::from_str(&get_config().client_id).unwrap());
             self.authenticated = true;
         } else {
             self.authenticated = false;

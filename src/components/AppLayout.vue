@@ -1,35 +1,79 @@
 <template>
-  <div class="app-container">
-    <!-- 顶部导航栏 -->
-    <a-layout-header class="app-header">
-      <div class="header-content">
+  <a-layout class="app-layout">
+    <a-layout-sider
+      hide-trigger
+      collapsible
+      :collapsed="collapsed"
+      :width="240"
+      :collapsed-width="68"
+      class="app-sider"
+      theme="light"
+    >
+      <div class="sider-logo" :class="{ 'collapsed': collapsed }">
+        <div class="logo-wrapper" @click="$router.push('/')">
+          <icon-video-camera :size="28" class="logo-icon" />
+          <h1 class="app-title" v-show="!collapsed">MyTV</h1>
+        </div>
+      </div>
+
+      <a-menu
+        :selected-keys="selectedKeys"
+        :collapsed="collapsed"
+        class="app-menu"
+        @menu-item-click="handleMenuClick"
+      >
+        <a-menu-item key="home">
+          <template #icon><icon-home /></template>
+          首页
+        </a-menu-item>
+        
+        <a-sub-menu key="discover">
+          <template #icon><icon-star /></template>
+          <template #title>发现</template>
+          <a-menu-item key="movies">电影</a-menu-item>
+          <a-menu-item key="shows">电视剧</a-menu-item>
+          <a-menu-item key="trending">热门</a-menu-item>
+        </a-sub-menu>
+        
+        <a-sub-menu key="my-library">
+          <template #icon><icon-bookmark /></template>
+          <template #title>我的</template>
+          <a-menu-item key="watchlist">观看清单</a-menu-item>
+          <a-menu-item key="collection">我的片库</a-menu-item>
+          <a-menu-item key="history">观看历史</a-menu-item>
+        </a-sub-menu>
+        
+        <a-menu-item key="search">
+          <template #icon><icon-search /></template>
+          搜索
+        </a-menu-item>
+      </a-menu>
+
+      <!-- 悬浮胶囊折叠按钮 -->
+      <div class="sider-trigger" @click="collapsed = !collapsed">
+        <icon-menu-unfold v-if="collapsed" />
+        <icon-menu-fold v-else />
+      </div>
+    </a-layout-sider>
+
+    <a-layout class="layout-main">
+      <a-layout-header class="app-header">
         <div class="header-left">
-          <!-- 全局返回按钮 -->
-          <a-tooltip 
+          <a-button 
             v-if="showGlobalBackButton"
-            content="返回上一页 (Ctrl+← / Alt+←)"
-            position="bottom"
+            type="text" 
+            class="global-back-button"
+            @click="handleGlobalBack"
           >
-            <a-button 
-              type="text" 
-              class="global-back-button"
-              @click="handleGlobalBack"
-            >
-              <icon-arrow-left :size="18" />
-            </a-button>
-          </a-tooltip>
-          
-          <h1 class="app-title" @click="$router.push('/')">
-            <icon-video-camera :size="24" />
-            MyTV
-          </h1>
+            <icon-arrow-left :size="18" />
+          </a-button>
         </div>
         
-        <div class="header-center">
+        <div class="header-center" data-tauri-drag-region>
           <a-input-search
             v-model="searchQuery"
             class="search-input"
-            placeholder="搜索电影、电视剧..."
+            placeholder="搜索..."
             @search="handleSearch"
             @press-enter="handleSearch"
           >
@@ -41,12 +85,12 @@
         
         <div class="header-right">
           <a-space :size="16">
-            <a-button type="text" @click="login" v-if="!isLoggedIn">
+            <a-button type="text" @click="login" v-if="!isLoggedIn" class="user-btn">
               <icon-user />
               登录
             </a-button>
             <a-dropdown v-else>
-              <a-button type="text">
+              <a-button type="text" class="user-btn">
                 <icon-user />
                 {{ userInfo?.username || '用户' }}
                 <icon-down />
@@ -63,68 +107,32 @@
               </template>
             </a-dropdown>
           </a-space>
+
+          <!-- 窗口控制按钮 -->
+          <div class="window-controls">
+            <div class="control-btn" @click="minimizeWindow">
+              <icon-minus />
+            </div>
+            <div class="control-btn" @click="maximizeWindow">
+              <icon-fullscreen />
+            </div>
+            <div class="control-btn close-btn" @click="closeWindow">
+              <icon-close />
+            </div>
+          </div>
         </div>
-      </div>
-    </a-layout-header>
+      </a-layout-header>
 
-    <a-layout>
-      <!-- 侧边导航 -->
-      <a-layout-sider
-        class="app-sider"
-        :collapsed="collapsed"
-        :collapsible="true"
-        @collapse="handleCollapse"
-        :width="240"
-        :collapsed-width="60"
-      >
-        <a-menu
-          :selected-keys="selectedKeys"
-          :style="{ height: '100%' }"
-          @menu-item-click="handleMenuClick"
-        >
-          <a-menu-item key="home">
-            <icon-home />
-            <span>首页</span>
-          </a-menu-item>
-          
-          <a-sub-menu key="discover">
-            <template #title>
-              <icon-star />
-              <span>发现</span>
-            </template>
-            <a-menu-item key="movies">电影</a-menu-item>
-            <a-menu-item key="shows">电视剧</a-menu-item>
-            <a-menu-item key="trending">热门</a-menu-item>
-          </a-sub-menu>
-          
-          <a-sub-menu key="my-library">
-            <template #title>
-              <icon-bookmark />
-              <span>我的</span>
-            </template>
-            <a-menu-item key="watchlist">观看清单</a-menu-item>
-            <a-menu-item key="collection">收藏</a-menu-item>
-            <a-menu-item key="history">观看历史</a-menu-item>
-          </a-sub-menu>
-          
-          <a-menu-item key="search">
-            <icon-search />
-            <span>搜索</span>
-          </a-menu-item>
-        </a-menu>
-      </a-layout-sider>
-
-      <!-- 主要内容区域 -->
-      <a-layout-content class="main-content">
+      <a-layout-content class="app-content">
         <router-view v-slot="{ Component, route }">
-          <keep-alive v-if="shouldKeepAlive(route)" :include="keepAlivePages">
+          <keep-alive v-if="shouldKeepAlive(route)">
             <component :is="Component" :key="route.fullPath" />
           </keep-alive>
           <component v-else :is="Component" :key="route.fullPath" />
         </router-view>
       </a-layout-content>
     </a-layout>
-  </div>
+  </a-layout>
 </template>
 
 <script setup lang="ts">
@@ -132,14 +140,18 @@ import { ref, computed, watch, onMounted, provide, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { 
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
-  IconHome, IconStar, IconBookmark, IconArrowLeft
+  IconHome, IconStar, IconBookmark, IconArrowLeft,
+  IconMenuFold, IconMenuUnfold,
+  IconMinus, IconFullscreen, IconClose
 } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import type { User } from '../types/api'
 
 const router = useRouter()
 const route = useRoute()
+const appWindow = getCurrentWindow()
 
 // 状态管理
 const searchQuery = ref('')
@@ -148,14 +160,9 @@ const isLoggedIn = ref(false)
 const userInfo = ref<User | null>(null)
 const showGlobalBackButton = ref(false)
 
-// 需要缓存的页面组件名称
-const keepAlivePages = ref(['HomeView', 'SearchView', 'WatchlistView'])
-
-// 计算当前选中的菜单项
 const selectedKeys = computed(() => {
   const path = route.path
   const type = route.query.type as string
-  
   if (path === '/') {
     if (type === 'movies') return ['movies']
     if (type === 'shows') return ['shows'] 
@@ -167,157 +174,99 @@ const selectedKeys = computed(() => {
   if (path === '/collection') return ['collection']
   if (path === '/history') return ['history']
   if (path.startsWith('/movie') || path.startsWith('/show')) {
-    return ['home'] // 详情页时高亮首页
+    return ['home']
   }
   return ['home']
 })
 
-// 检查登录状态
 const checkLoginStatus = async () => {
   try {
     const token = await invoke<boolean>('check_login_status')
     if (token) {
       isLoggedIn.value = true
-      // 获取用户信息
       await loadUserProfile()
     }
-  } catch (error) {
-    console.error('检查登录状态失败:', error)
-  }
+  } catch (error) { console.error(error) }
 }
 
-// 获取用户信息
 const loadUserProfile = async () => {
   try {
     const profile = await invoke('get_user_profile')
-    if (profile) {
-      userInfo.value = (profile as any).user // 从UserProfile中提取user
-    }
-  } catch (error) {
-    console.error('获取用户信息失败:', error)
-  }
+    if (profile) userInfo.value = (profile as any).user
+  } catch (error) { console.error(error) }
 }
 
-// 提供给子组件使用
 provide('userInfo', userInfo)
 provide('isLoggedIn', isLoggedIn)
 provide('refreshUserInfo', loadUserProfile)
 
-// 处理OAuth回调
 const setupOAuthListener = () => {
   listen<string>("oauth-callback", async (event) => {
-    const code = event.payload;
-    if (code.length > 0) {
-      try {
-        const token = await invoke("get_token", { code });
-        console.log('获取到token:', token);
-        isLoggedIn.value = true;
-        await loadUserProfile();
-      } catch (error) {
-        console.error('获取token失败:', error);
-      }
-    }
-  });
-}
-
-// 处理搜索
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({
-      name: 'search',
-      query: { q: searchQuery.value.trim() }
-    })
-  }
-}
-
-// 处理菜单点击
-const handleMenuClick = (key: string) => {
-  switch (key) {
-    case 'home':
-      router.push('/')
-      break
-    case 'search':
-      router.push('/search')
-      break
-    case 'watchlist':
-      router.push('/watchlist')
-      break
-    case 'collection':
-      router.push('/collection')
-      break
-    case 'history':
-      router.push('/history')
-      break
-    case 'movies':
-      router.push('/?type=movies')
-      break
-    case 'shows':
-      router.push('/?type=shows')
-      break
-    case 'trending':
-      router.push('/?type=trending')
-      break
-  }
-}
-
-// 处理侧边栏折叠
-const handleCollapse = (val: boolean) => {
-  collapsed.value = val
-}
-
-// 登录功能
-const login = async () => {
-  try {
-    const result = await invoke('start_trakt_user_auth')
-    console.log('开始用户认证:', result)
-  } catch (error) {
-    if (error === 200) {
-      // 已经登录
+    if (event.payload) {
+      await invoke("get_token", { code: event.payload })
       isLoggedIn.value = true
       await loadUserProfile()
-    } else {
-      console.error('登录失败:', error)
     }
+  })
+}
+
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.push({ name: 'search', query: { q: searchQuery.value.trim() } })
   }
 }
 
-// 退出登录
+const handleMenuClick = (key: string) => {
+  switch (key) {
+    case 'home': router.push('/'); break;
+    case 'search': router.push('/search'); break;
+    case 'watchlist': router.push('/watchlist'); break;
+    case 'collection': router.push('/collection'); break;
+    case 'history': router.push('/history'); break;
+    case 'movies': router.push('/?type=movies'); break;
+    case 'shows': router.push('/?type=shows'); break;
+    case 'trending': router.push('/?type=trending'); break;
+  }
+}
+
+const login = async () => {
+  try { await invoke('start_trakt_user_auth') }
+  catch (e) { if (e === 200) { isLoggedIn.value = true; await loadUserProfile() } }
+}
+
 const logout = async () => {
-  try {
-    await invoke('revoke_token')
-    isLoggedIn.value = false
-    userInfo.value = null
-  } catch (error) {
-    console.error('退出登录失败:', error)
-    // 即使API调用失败，也重置前端状态
-    isLoggedIn.value = false
-    userInfo.value = null
-  }
+  try { await invoke('revoke_token'); isLoggedIn.value = false; userInfo.value = null }
+  catch (e) { isLoggedIn.value = false; userInfo.value = null }
 }
 
-// 监听路由变化，控制全局返回按钮显示
+const handleGlobalBack = () => {
+  if (window.history.length > 1) router.back()
+  else router.push('/')
+}
+
+// 窗口控制
+const minimizeWindow = () => appWindow.minimize()
+const maximizeWindow = async () => {
+  if (await appWindow.isMaximized()) {
+    appWindow.unmaximize()
+  } else {
+    appWindow.maximize()
+  }
+}
+const closeWindow = () => appWindow.close()
+
 watch(route, (newRoute) => {
-  // 在详情页面显示全局返回按钮
-  const isDetailPage = newRoute.path.startsWith('/movie/') || 
-                      newRoute.path.startsWith('/show/') ||
-                      newRoute.path === '/profile' ||
-                      newRoute.path === '/search'
-  showGlobalBackButton.value = isDetailPage
+  showGlobalBackButton.value = newRoute.path !== '/' && newRoute.path !== '/search'
 }, { immediate: true })
 
-// 处理全局返回按钮
-const handleGlobalBack = () => {
-  // 如果有历史记录，则返回上一页，否则跳转到首页
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/')
+const shouldKeepAlive = (route: any) => {
+  if (route.path.startsWith('/movie/') || route.path.startsWith('/show/')) {
+    return false
   }
+  return ['/', '/search', '/watchlist', '/collection', '/history', '/profile'].includes(route.path)
 }
 
-// 添加键盘快捷键支持
 const handleKeyDown = (event: KeyboardEvent) => {
-  // Alt + 左箭头 或 Ctrl + 左箭头 返回上一页
   if ((event.altKey || event.ctrlKey) && event.key === 'ArrowLeft') {
     event.preventDefault()
     if (showGlobalBackButton.value) {
@@ -332,145 +281,281 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeyDown)
 })
 
-// 在组件卸载时清理事件监听器
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeyDown)
 })
-
-// 监听路由变化，清空搜索框
-watch(route, () => {
-  if (route.name !== 'search') {
-    searchQuery.value = ''
-  }
-})
-
-// 根据路由决定是否缓存组件
-const shouldKeepAlive = (route: any) => {
-  // 详情页面不缓存（因为它们是动态的）
-  if (route.path.startsWith('/movie/') || route.path.startsWith('/show/')) {
-    return false
-  }
-  
-  // 其他页面可以缓存
-  return ['/', '/search', '/watchlist', '/collection', '/history', '/profile'].includes(route.path)
-}
 </script>
 
 <style scoped>
-.app-header {
-  background: white;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 0;
-  height: 64px;
-  line-height: 64px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* 全局容器 */
+.app-layout {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #ffffff; /* 整体白色背景，去除分割线感 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.header-content {
+/* 侧边栏 - 现代流媒体风格 */
+.app-sider {
+  background-color: #ffffff;
+  position: relative;
+  z-index: 10;
+  border-right: none; /* 去掉分割线 */
+}
+
+/* Logo 区域 */
+.sider-logo {
+  height: 80px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 24px;
-  height: 100%;
+  padding-left: 16px;
+  margin-bottom: 8px;
 }
 
-.header-left {
+.logo-wrapper {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  -webkit-app-region: drag;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
 }
 
-.global-back-button {
-  padding: 8px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  color: #4a5568;
-  position: relative;
-  overflow: hidden;
+.logo-wrapper:hover {
+  background-color: rgba(0,0,0,0.03);
 }
 
-.global-back-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(22, 93, 255, 0.1);
-  border-radius: 8px;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-}
-
-.global-back-button:hover::before {
-  transform: translateX(0);
-}
-
-.global-back-button:hover {
-  color: #165dff;
-  transform: translateX(-2px);
-}
-
-.global-back-button:active {
-  transform: translateX(-1px) scale(0.95);
+.logo-icon { 
+  color: #165dff; 
+  filter: drop-shadow(0 4px 10px rgba(22, 93, 255, 0.3)); /* 发光 Logo */
+  flex-shrink: 0;
 }
 
 .app-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin: 0;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1d1d1f 0%, #333 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+/* Logo 折叠适配 */
+.sider-logo.collapsed {
+  justify-content: center;
+  padding-left: 0;
+}
+.sider-logo.collapsed .logo-wrapper {
+  padding: 8px;
+  justify-content: center;
+}
+
+/* 菜单样式 */
+.app-menu {
+  padding: 0 16px; /* 增加左右留白 */
+}
+
+:deep(.arco-menu-inner) {
+  padding: 0;
+  overflow: hidden;
+}
+
+:deep(.arco-menu-item), 
+:deep(.arco-menu-group-title), 
+:deep(.arco-menu-pop-header), 
+:deep(.arco-menu-inline-header) {
+  background-color: transparent;
+  line-height: 48px; /* 更高的点击区域 */
+  height: 48px;
+  margin-bottom: 8px;
+  border-radius: 16px; /* 大圆角 */
+  color: #4e5969;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+/* 悬停效果 */
+:deep(.arco-menu-item:hover), 
+:deep(.arco-menu-pop-header:hover), 
+:deep(.arco-menu-inline-header:hover) {
+  background-color: #f7f8fa;
   color: #1d1d1f;
+}
+
+/* 选中效果 - 柔和色块 */
+:deep(.arco-menu-selected) { 
+  background-color: #f0f4ff !important; /* 极淡蓝 */
+  color: #165dff !important;
+  font-weight: 600;
+}
+
+:deep(.arco-menu-icon) { 
+  margin-right: 14px; 
+  font-size: 20px;
+  transition: transform 0.2s;
+}
+
+:deep(.arco-menu-selected .arco-menu-icon) {
+  color: #165dff; 
+  transform: scale(1.1);
+}
+
+/* 折叠后的菜单修正 */
+:deep(.arco-menu-collapsed .arco-menu-item) {
+  justify-content: center;
+  padding: 0 !important;
+}
+:deep(.arco-menu-collapsed .arco-menu-icon) {
+  margin-right: 0;
+}
+
+/* 底部触发器 - 悬浮胶囊 */
+.sider-trigger {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  user-select: none;
+  background-color: transparent;
+  color: #86909c;
+  transition: all 0.2s;
+}
+.sider-trigger:hover {
+  background-color: #f7f8fa;
+  color: #1d1d1f;
 }
 
-.header-center {
+/* 右侧主布局容器 */
+.layout-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: #ffffff; /* 与左侧一致，无缝融合 */
+}
+
+/* Header - 极简 */
+.app-header {
+  height: 72px;
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 24px; /* 右侧减小到 16px，左侧保持 24px */
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.header-right { 
+  display: flex; 
+  align-items: center; 
+  -webkit-app-region: no-drag; 
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+  gap: 8px; /* 增加按钮间距 */
+}
+
+.control-btn {
+  width: 40px; /* 增大宽度 */
+  height: 40px; /* 增大高度 */
+  border-radius: 8px; /* 更大的圆角 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4e5969;
+  transition: all 0.2s;
+  font-size: 18px; /* 增大图标 */
+}
+
+.control-btn:hover {
+  background-color: rgba(0,0,0,0.06);
+  color: #1d1d1f;
+}
+
+.close-btn:hover {
+  background-color: #ff4d4f;
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3); /* 关闭按钮增加阴影 */
+}
+
+/* 搜索框 - 胶囊 */
+.search-input { width: 320px; transition: width 0.3s; }
+.search-input:focus-within { width: 360px; }
+
+:deep(.arco-input-wrapper) { 
+  border-radius: 20px; 
+  background: #f2f3f5; 
+  border: 1px solid transparent; 
+  height: 40px;
+  padding: 0 16px;
+}
+:deep(.arco-input-wrapper:focus-within) { 
+  background: #ffffff; 
+  border-color: #165dff;
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
+}
+
+/* 按钮样式 */
+.user-btn { 
+  color: #1d1d1f; 
+  font-size: 14px; 
+  font-weight: 600;
+  height: 40px;
+  border-radius: 20px;
+  padding: 0 20px;
+}
+.user-btn:hover { background-color: #f7f8fa; }
+
+.global-back-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: #1d1d1f;
+  background: #f7f8fa;
+}
+.global-back-button:hover {
+  background-color: #1d1d1f;
+  color: white;
+}
+
+/* 内容区域 */
+.app-content {
   flex: 1;
-  max-width: 500px;
-  margin: 0 40px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 5;
+  padding-top: 0; /* Header 融合模式下，不需要额外 padding，或者按需调整 */
 }
 
-.header-right {
-  flex: 0 0 auto;
-}
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
 
-.app-sider {
-  background: white;
-  border-right: 1px solid #f0f0f0;
-}
-
-.main-content {
-  background: #f5f5f7;
-  min-height: calc(100vh - 64px);
-}
-
-/* 响应式设计 */
 @media (max-width: 768px) {
-  .header-center {
-    margin: 0 16px;
-  }
-  
-  .header-content {
-    padding: 0 16px;
-  }
-  
-  .app-sider {
-    position: fixed;
-    left: 0;
-    top: 64px;
-    bottom: 0;
-    z-index: 99;
-  }
-  
-  .main-content {
-    margin-left: 0;
-  }
+  .app-header { padding: 0 20px; height: 64px; }
+  .search-input { width: 200px; }
+  .sider-trigger { bottom: 16px; }
 }
-</style> 
+</style>

@@ -11,8 +11,9 @@ pub struct MovieTrending {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Movie {
     pub title: String,
-    pub year: u32,
+    pub year: Option<u32>,
     pub ids: MovieIds,
+    #[serde(default)]
     pub images: Images
 }
 
@@ -20,8 +21,8 @@ pub struct Movie {
 pub struct MovieIds{
     pub trakt: u32,
     pub slug: String,
-    pub imdb: String,
-    pub tmdb: u32,
+    pub imdb: Option<String>,
+    pub tmdb: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

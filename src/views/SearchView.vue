@@ -213,6 +213,11 @@ const filteredResults = computed(() => {
 
   if (filters.value.type) {
     results = results.filter(item => {
+      // 优先使用显式的 media_type
+      if (item.media_type) {
+        return item.media_type === filters.value.type
+      }
+      // 后备判断逻辑
       const isMovie = 'tagline' in item || 'released' in item
       return filters.value.type === 'movie' ? isMovie : !isMovie
     })
@@ -220,7 +225,7 @@ const filteredResults = computed(() => {
 
   if (filters.value.year) {
     results = results.filter(item => 
-      item.year?.toString() === filters.value.year
+      item.year === Number(filters.value.year)
     )
   }
 
@@ -294,8 +299,10 @@ const performSearch = async () => {
     const items: (Movie | Show)[] = []
     for (const result of results) {
       if (result.movie) {
+        result.movie.media_type = 'movie'
         items.push(result.movie)
       } else if (result.show) {
+        result.show.media_type = 'show'
         items.push(result.show)
       }
     }

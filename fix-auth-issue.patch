@@ -1,0 +1,99 @@
+diff --git a/src-tauri/src/token.rs b/src-tauri/src/token.rs
+index xxx..xxx 100644
+--- a/src-tauri/src/token.rs
++++ b/src-tauri/src/token.rs
+@@ -9,4 +9,15 @@ pub struct Token {
+     pub scope: String,
+     pub created_at: u64,
+ }
++
++impl Token {
++    /// 检查 token 是否过期
++    pub fn is_expired(&self) -> bool {
++        let now = std::time::SystemTime::now()
++            .duration_since(std::time::UNIX_EPOCH)
++            .unwrap()
++            .as_secs();
++        
++        let expires_at = self.created_at + self.expires_in as u64;
++        now >= expires_at
++    }
++}
+ 
+diff --git a/src-tauri/src/trakt_api/auth.rs b/src-tauri/src/trakt_api/auth.rs
+index xxx..xxx 100644
+--- a/src-tauri/src/trakt_api/auth.rs
++++ b/src-tauri/src/trakt_api/auth.rs
+@@ -169,6 +169,37 @@ fn token_exists(app: &AppHandle) -> bool {
+ 
+ #[command]
+ pub async fn check_login_status(app: AppHandle) -> bool {
+-    token_exists(&app)
++    let exists = token_exists(&app);
++    
++    if !exists {
++        return false;
++    }
++    
++    // 检查 token 是否过期
++    let token_state = app.try_state::<Mutex<Token>>();
++    if let Some(token_state) = token_state {
++        let token = token_state.lock().await;
++        if token.is_expired() {
++            println!("Token 已过期，尝试刷新");
++            drop(token); // 释放锁
++            
++            let refresh_result = refresh_token(&app).await;
++            if refresh_result.is_ok() {
++                println!("Token 刷新成功");
++                return true;
++            } else {
++                println!("Token 刷新失败，需要重新登录");
++                // 清除无效 token
++                let store = app.store("app_data.json").unwrap();
++                let _ = store.delete("token");
++                return false;
++            }
++        }
++    }
++    
++    exists
+ }
+ 
+ #[command]
+
+diff --git a/src-tauri/src/trakt_api.rs b/src-tauri/src/trakt_api.rs
+index xxx..xxx 100644
+--- a/src-tauri/src/trakt_api.rs
++++ b/src-tauri/src/trakt_api.rs
+@@ -213,15 +213,28 @@ impl ApiClient {
+                     let status = resp.status().as_u16();
+                     if status == 401 {
+-                        println!("401");
++                        println!("收到 401 响应，尝试刷新 token");
+                         let result = refresh_token(app).await;
+                         if let Ok(token) = result {
+                             println!("刷新token {:?}", &token);
+                             self.refresh_client(Some(token));
++                            // Token 刷新成功，但不自动重试请求
++                            // 让调用者处理重试逻辑
+                         } else {
+                             println!("刷新token失败 {:?}", &result);
++                            // 清除存储中的无效 token
+                             let store = app.store("app_data.json").unwrap();
+                             let _ = store.delete("token");
++                            
++                            // 清除应用状态中的 token
++                            if let Some(token_state) = app.try_state::<Mutex<Token>>() {
++                                let mut t = token_state.lock().await;
++                                *t = Token {
++                                    access_token: String::new(),
++                                    token_type: String::new(),
++                                    expires_in: 0,
++                                    refresh_token: String::new(),
++                                    scope: String::new(),
++                                    created_at: 0,
++                                };
++                            }
+                         }
+                     }

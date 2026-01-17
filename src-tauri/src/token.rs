@@ -9,3 +9,16 @@ pub struct Token {
     pub scope: String,
     pub created_at: u64,
 }
+
+impl Token {
+    /// 检查 token 是否过期
+    pub fn is_expired(&self) -> bool {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        
+        let expires_at = self.created_at + self.expires_in as u64;
+        now >= expires_at
+    }
+}

@@ -6,6 +6,7 @@ export interface MovieImages {
   thumb?: string[];
   logo?: string[];
   clearart?: string[];
+  screenshot?: string[];
 }
 
 // 基础影视作品接口
@@ -28,6 +29,7 @@ export interface BaseMedia {
   runtime?: number;
   released?: string;
   trailer?: string;
+  media_type?: 'movie' | 'show';
 }
 
 // 电影类型
@@ -208,6 +210,7 @@ export interface Episode {
   votes?: number;
   runtime?: number;
   first_aired?: string;
+  images?: MovieImages;
 }
 
 // 用户观看状态

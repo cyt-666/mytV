@@ -53,21 +53,25 @@
               </a-button>
               <a-button 
                 size="large" 
-                class="action-btn"
+                :class="['action-btn', { 'is-active': isInCollection }]"
+                :type="isInCollection ? 'primary' : 'secondary'"
+                :status="isInCollection ? 'success' : undefined"
                 @click="handleToggleCollection"
                 :loading="actionLoading.collection"
               >
                 <icon-heart />
-                {{ isInCollection ? '取消收藏' : '收藏' }}
+                {{ isInCollection ? '已入库' : '入库' }}
               </a-button>
               <a-button 
                 size="large" 
-                class="action-btn"
+                :class="['action-btn', { 'is-active': isInWatchlist }]"
+                :type="isInWatchlist ? 'primary' : 'secondary'"
+                :status="isInWatchlist ? 'warning' : undefined"
                 @click="handleToggleWatchlist"
                 :loading="actionLoading.watchlist"
               >
                 <icon-bookmark />
-                {{ isInWatchlist ? '移出清单' : '想看' }}
+                {{ isInWatchlist ? '已想看' : '想看' }}
               </a-button>
             </div>
           </div>
@@ -155,14 +159,39 @@
                   v-for="season in seasons" 
                   :key="season.ids.trakt" 
                   class="season-card"
+                  @click="goToSeasonDetail(season)"
                 >
                   <div class="season-header">
-                    <h4 class="season-title">
-                      {{ getSeasonTitle(season) }}
-                      <span v-if="!seasonTranslations.has(season.ids.trakt)" class="season-translation-loading">
-                        <div class="translation-dot"></div>
-                      </span>
-                    </h4>
+                    <div class="season-header-left">
+                      <h4 class="season-title">
+                        {{ getSeasonTitle(season) }}
+                        <span v-if="!seasonTranslations.has(season.ids.trakt)" class="season-translation-loading">
+                          <div class="translation-dot"></div>
+                        </span>
+                      </h4>
+                      
+                      <div class="season-actions">
+                        <a-button 
+                          type="text" 
+                          shape="circle"
+                          size="small" 
+                          @click="(e: Event) => handleSeasonCollection(season, e)"
+                          title="添加到收藏"
+                        >
+                          <icon-heart />
+                        </a-button>
+                        <a-button 
+                          type="text" 
+                          shape="circle"
+                          size="small" 
+                          @click="(e: Event) => handleSeasonWatchlist(season, e)"
+                          title="添加到想看"
+                        >
+                          <icon-bookmark />
+                        </a-button>
+                      </div>
+                    </div>
+
                     <div class="season-meta">
                       <span v-if="season.first_aired" class="season-year">
                         {{ new Date(season.first_aired).getFullYear() }}
@@ -224,9 +253,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { 
-  IconImage, IconStarFill, IconPlayArrow, IconHeart, 
+  IconImage, IconStarFill, IconPlayArrow, IconHeart,
   IconBookmark, IconExclamationCircle, IconLink
 } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
@@ -235,6 +264,7 @@ import type { ShowDetails, MovieImages, Seasons } from '../types/api'
 import { getShowChineseTranslation, getSeasonChineseTranslation, type TranslationResult } from '../utils/translation'
 
 const route = useRoute()
+const router = useRouter()
 
 // 响应式数据
 const showDetails = ref<ShowDetails | null>(null)
@@ -550,6 +580,54 @@ const handleMarkAsWatched = async () => {
   }
 }
 
+const goToSeasonDetail = (season: any) => {
+  if (!showDetails.value?.ids?.trakt) return
+  
+  router.push({
+    name: 'season-detail',
+    params: {
+      id: showDetails.value.ids.trakt,
+      season: season.number
+    }
+  })
+}
+
+const handleSeasonCollection = async (season: any, event: Event) => {
+  event.stopPropagation()
+  if (!season.ids?.trakt) return
+  
+  try {
+    // 简单实现：总是添加（Trakt API幂等，如果已存在不会重复添加，或者需要先检查状态）
+    // 由于检查状态需要请求API，这里简化为只提供添加功能，或者假定未添加
+    // 更好的方式是维护一个 Set<seasonId> collectedSeasons
+    
+    await invoke('add_to_collection', {
+      mediaType: 'season',
+      traktId: season.ids.trakt
+    })
+    Message.success(`第 ${season.number} 季已添加到收藏`)
+  } catch (error) {
+    console.error('收藏季度失败:', error)
+    Message.error('操作失败')
+  }
+}
+
+const handleSeasonWatchlist = async (season: any, event: Event) => {
+  event.stopPropagation()
+  if (!season.ids?.trakt) return
+  
+  try {
+    await invoke('add_to_watchlist', {
+      mediaType: 'season',
+      traktId: season.ids.trakt
+    })
+    Message.success(`第 ${season.number} 季已添加到想看`)
+  } catch (error) {
+    console.error('添加到想看失败:', error)
+    Message.error('操作失败')
+  }
+}
+
 // 获取季度的翻译标题
 const getSeasonTitle = (season: any) => {
   const translation = seasonTranslations.value.get(season.ids.trakt)
@@ -565,7 +643,43 @@ const getSeasonOverview = (season: any) => {
 // 生命周期
 onMounted(() => {
   fetchShowDetails()
+  checkUserStatus()
 })
+
+// 检查用户的收藏和观看清单状态
+const checkUserStatus = async () => {
+  try {
+    const showId = route.params.id
+    if (!showId) return
+    
+    const numericId = typeof showId === 'string' ? parseInt(showId, 10) : Number(showId)
+    if (isNaN(numericId)) return
+    
+    // 并行获取用户的 watchlist 和 collection
+    const [watchlistResult, collectionResult] = await Promise.allSettled([
+      invoke<any[]>('get_watchlist', { id: 'me', selectType: 'shows' }),
+      invoke<any[]>('get_collection', { id: 'me', selectType: 'shows' })
+    ])
+    
+    // 检查是否在 watchlist 中
+    if (watchlistResult.status === 'fulfilled' && watchlistResult.value) {
+      isInWatchlist.value = watchlistResult.value.some(
+        (item: any) => item.show?.ids?.trakt === numericId
+      )
+    }
+    
+    // 检查是否在 collection 中
+    if (collectionResult.status === 'fulfilled' && collectionResult.value) {
+      isInCollection.value = collectionResult.value.some(
+        (item: any) => item.show?.ids?.trakt === numericId
+      )
+    }
+    
+    console.log('用户状态检查完成:', { isInWatchlist: isInWatchlist.value, isInCollection: isInCollection.value })
+  } catch (error) {
+    console.error('检查用户状态失败:', error)
+  }
+}
 </script>
 
 <style scoped>
@@ -654,6 +768,10 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   font-weight: 600;
+}
+
+.action-btn.is-active {
+  font-weight: 700;
 }
 
 .info-section {
@@ -828,11 +946,19 @@ onMounted(() => {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .season-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.season-card.is-expanded {
+  background: white;
+  border-color: rgba(var(--primary-6), 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: none;
 }
 
 .season-header {
@@ -843,15 +969,34 @@ onMounted(() => {
   gap: 16px;
 }
 
+.season-header-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .season-title {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
   color: #1d1d1f;
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.season-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.season-card:hover .season-actions,
+.season-card.is-expanded .season-actions {
+  opacity: 1;
 }
 
 .season-meta {
@@ -859,6 +1004,110 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.expand-icon {
+  color: #8e8e93;
+  margin-left: 4px;
+}
+
+/* ... existing styles ... */
+
+.episodes-container {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.episodes-loading {
+  padding: 24px;
+  text-align: center;
+  color: #8e8e93;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.episodes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.episode-item {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.episode-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.episode-header {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.episode-idx {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c9c9c9;
+  min-width: 32px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.episode-main {
+  flex: 1;
+}
+
+.episode-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.episode-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.episode-rating {
+  font-size: 13px;
+  color: #faad14;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(250, 173, 20, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.episode-meta {
+  font-size: 13px;
+  color: #8e8e93;
+}
+
+.episode-overview {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  padding-left: 48px;
+  line-height: 1.6;
 }
 
 .season-year {

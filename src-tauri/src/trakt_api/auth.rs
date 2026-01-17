@@ -1,4 +1,4 @@
-use tauri_plugin_http::reqwest;
+use reqwest;
 use tokio::sync::Mutex;
 
 use serde_json::{json, Value};
@@ -131,6 +131,7 @@ pub async fn refresh_token(app: &AppHandle) -> Result<Token, u16> {
     let result = reqwest::Client::new()
         .post(format!("{}{}", TRAKT_API_HOST, API.auth.refresh_token.uri))
         .header("Content-Type", "application/json")
+        .header("User-Agent", "MyTV/1.0")
         .body(serde_json::to_string(&body).unwrap())
         .send()
         .await;
@@ -169,7 +170,35 @@ fn token_exists(app: &AppHandle) -> bool {
 
 #[command]
 pub async fn check_login_status(app: AppHandle) -> bool {
-    token_exists(&app)
+    let exists = token_exists(&app);
+    
+    if !exists {
+        return false;
+    }
+    
+    // 检查 token 是否过期
+    let token_state = app.try_state::<Mutex<Token>>();
+    if let Some(token_state) = token_state {
+        let token = token_state.lock().await;
+        if token.is_expired() {
+            println!("Token 已过期，尝试刷新");
+            drop(token); // 释放锁
+            
+            let refresh_result = refresh_token(&app).await;
+            if refresh_result.is_ok() {
+                println!("Token 刷新成功");
+                return true;
+            } else {
+                println!("Token 刷新失败，需要重新登录");
+                // 清除无效 token
+                let store = app.store("app_data.json").unwrap();
+                let _ = store.delete("token");
+                return false;
+            }
+        }
+    }
+    
+    exists
 }
 
 #[command]
@@ -187,6 +216,7 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
         let result = reqwest::Client::new()
             .post(format!("{}{}", TRAKT_API_HOST, API.auth.revoke_token.uri))
             .header("Content-Type", "application/json")
+            .header("User-Agent", "MyTV/1.0")
             .body(serde_json::to_string(&revoke_body).unwrap())
             .send()
             .await;

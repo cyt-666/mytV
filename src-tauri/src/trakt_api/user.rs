@@ -1,7 +1,7 @@
 use crate::model::user::UserProfile;
 use crate::model::user::Stats;
 use crate::model::movie::Movie;
-use crate::model::shows::Show;
+use crate::model::shows::{Show, Episode, Season};
 use tauri::command;
 use crate::trakt_api::{ApiClient, API};
 use tauri::{AppHandle, Manager};
@@ -15,14 +15,18 @@ pub struct Watched {
     pub last_updated_at: String,
     pub movie: Option<Movie>,
     pub show: Option<Show>,
+    pub season: Option<Season>,
+    pub episode: Option<Episode>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CollectionItem {
-    pub collected_at: String,
-    pub updated_at: String,
+    pub collected_at: Option<String>,
+    pub updated_at: Option<String>,
     pub movie: Option<Movie>,
     pub show: Option<Show>,
+    pub season: Option<Season>,
+    pub episode: Option<Episode>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -30,6 +34,8 @@ pub struct WatchlistItem {
     pub listed_at: String,
     pub movie: Option<Movie>,
     pub show: Option<Show>,
+    pub season: Option<Season>,
+    pub episode: Option<Episode>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -40,6 +46,7 @@ pub struct HistoryItem {
     pub item_type: String,
     pub movie: Option<Movie>,
     pub show: Option<Show>,
+    pub episode: Option<Episode>,
 }
 
 #[command]
@@ -125,11 +132,23 @@ pub async fn get_watchlist(app: AppHandle, id: String, select_type: String) -> R
 }
 
 #[command]
-pub async fn get_history(app: AppHandle, id: String) -> Result<Vec<HistoryItem>, u16> {
+pub async fn get_history(app: AppHandle, id: String, page: Option<u32>, limit: Option<u32>) -> Result<Vec<HistoryItem>, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.user.history.uri.clone();
     uri = uri.replace("id", &id);
+    
+    let mut query_parts: Vec<String> = Vec::new();
+    if let Some(p) = page {
+        query_parts.push(format!("page={}", p));
+    }
+    if let Some(l) = limit {
+        query_parts.push(format!("limit={}", l));
+    }
+    if !query_parts.is_empty() {
+        uri = format!("{}?{}", uri, query_parts.join("&"));
+    }
+    
     let result = client.req_api(&app, API.user.history.method.as_str(), uri, None, None, None, None, true).await;
     if let Ok(result) = result {
         println!("{}", result);

@@ -10,8 +10,9 @@ pub struct ShowTrending {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Show {
     pub title: String,
-    pub year: u32,
+    pub year: Option<u32>,
     pub ids: ShowIds,
+    #[serde(default)]
     pub images: Images
 }
 
@@ -20,9 +21,9 @@ pub struct Show {
 pub struct ShowIds {
     pub trakt: u32,
     pub slug: String,
-    pub tvdb: u32,
-    pub imdb: String,
-    pub tmdb: u32,
+    pub tvdb: Option<u32>,
+    pub imdb: Option<String>,
+    pub tmdb: Option<u32>,
     pub tvrage: Option<Vec<u32>>,
 }
 
@@ -109,3 +110,27 @@ pub struct SeasonTranslation {
 }
 
 pub type SeasonTranslations = Vec<SeasonTranslation>;
+
+// Episode 结构体 (用于 history API)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Episode {
+    pub season: u32,
+    pub number: u32,
+    pub title: Option<String>,
+    pub ids: EpisodeIds,
+    pub runtime: Option<u32>,
+    pub overview: Option<String>,
+    pub rating: Option<f32>,
+    pub votes: Option<u32>,
+    pub first_aired: Option<String>,
+    #[serde(default)]
+    pub images: Option<crate::model::assets::Images>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EpisodeIds {
+    pub trakt: u32,
+    pub tvdb: Option<u32>,
+    pub imdb: Option<String>,
+    pub tmdb: Option<u32>,
+}

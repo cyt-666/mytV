@@ -49,6 +49,8 @@ pub fn run() {
             trakt_api::shows::show_translation,
             trakt_api::shows::show_seasons,
             trakt_api::shows::season_trans,
+            trakt_api::shows::get_season_episodes,
+            trakt_api::shows::get_episode_details,
             trakt_api::translation_cache::get_movie_translation_cached,
             trakt_api::translation_cache::get_show_translation_cached,
             trakt_api::translation_cache::get_season_translation_cached,

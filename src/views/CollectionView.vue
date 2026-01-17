@@ -2,8 +2,8 @@
   <div class="collection-view">
     <div class="page-container">
       <div class="page-header">
-        <h1 class="page-title">我的收藏</h1>
-        <p class="page-subtitle">已收藏的电影和电视剧</p>
+        <h1 class="page-title">我的片库</h1>
+        <p class="page-subtitle">已入库的电影和电视剧</p>
       </div>
 
       <!-- 筛选和排序 -->
@@ -24,8 +24,8 @@
             placeholder="排序方式"
             :style="{ width: '140px' }"
           >
-            <a-option value="collected_desc">最新收藏</a-option>
-            <a-option value="collected_asc">最早收藏</a-option>
+            <a-option value="collected_desc">最新入库</a-option>
+            <a-option value="collected_asc">最早入库</a-option>
             <a-option value="title_asc">标题A-Z</a-option>
             <a-option value="title_desc">标题Z-A</a-option>
             <a-option value="rating_desc">评分高-低</a-option>
@@ -41,19 +41,20 @@
         :items="filteredAndSortedItems"
         :loading="loading"
         :show-meta="true"
-        empty-message="还没有收藏任何内容，快去收藏一些喜欢的影视作品吧！"
+        empty-message="还没有入库任何内容，快去添加一些喜欢的影视作品吧！"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show } from '../types/api'
 import { useAuth } from '../composables/useAuth'
+import { usePageState } from '../composables/usePageState'
 
 interface CollectionItem {
   collected_at: string
@@ -64,9 +65,15 @@ interface CollectionItem {
 
 interface ExtendedMedia extends Movie, Show {
   collected_at?: string
+  media_type?: 'movie' | 'show'
 }
 
 const { userInfo } = useAuth()
+const { saveState, restoreState } = usePageState('collection')
+
+defineOptions({
+  name: 'CollectionView'
+})
 
 const loading = ref(false)
 const collectionItems = ref<ExtendedMedia[]>([])
@@ -78,6 +85,10 @@ const filteredAndSortedItems = computed(() => {
   
   if (filterType.value) {
     items = items.filter(item => {
+      // 优先使用显式的 media_type
+      if (item.media_type) {
+        return item.media_type === filterType.value
+      }
       const isMovie = 'tagline' in item
       return filterType.value === 'movie' ? isMovie : !isMovie
     })
@@ -111,6 +122,37 @@ const filteredAndSortedItems = computed(() => {
   return items
 })
 
+const saveCollectionState = () => {
+  const state = {
+    collectionItems: collectionItems.value,
+    filterType: filterType.value,
+    sortBy: sortBy.value,
+    scrollPosition: window.scrollY,
+    timestamp: Date.now()
+  }
+  saveState(state)
+}
+
+const restoreCollectionState = () => {
+  const state = restoreState()
+  if (state && state.timestamp) {
+    const tenMinutes = 10 * 60 * 1000
+    if (Date.now() - state.timestamp < tenMinutes) {
+      collectionItems.value = state.collectionItems || []
+      filterType.value = state.filterType || ''
+      sortBy.value = state.sortBy || 'collected_desc'
+      
+      if (state.scrollPosition > 0) {
+        nextTick(() => {
+          window.scrollTo({ top: state.scrollPosition, behavior: 'smooth' })
+        })
+      }
+      return true
+    }
+  }
+  return false
+}
+
 const loadCollection = async () => {
   if (!userInfo.value?.username) {
     Message.warning('请先登录')
@@ -133,19 +175,20 @@ const loadCollection = async () => {
     
     for (const item of movieResults) {
       if (item.movie) {
-        const extendedMovie = { ...item.movie, collected_at: item.collected_at } as ExtendedMedia
+        const extendedMovie = { ...item.movie, collected_at: item.collected_at, media_type: 'movie' } as ExtendedMedia
         items.push(extendedMovie)
       }
     }
     
     for (const item of showResults) {
       if (item.show) {
-        const extendedShow = { ...item.show, collected_at: item.collected_at } as ExtendedMedia
+        const extendedShow = { ...item.show, collected_at: item.collected_at, media_type: 'show' } as ExtendedMedia
         items.push(extendedShow)
       }
     }
     
     collectionItems.value = items
+    saveCollectionState()
   } catch (error) {
     console.error('加载收藏失败:', error)
     Message.error('加载收藏失败，请稍后重试')
@@ -155,7 +198,14 @@ const loadCollection = async () => {
 }
 
 onMounted(() => {
-  loadCollection()
+  const restored = restoreCollectionState()
+  if (!restored) {
+    loadCollection()
+  }
+})
+
+onBeforeUnmount(() => {
+  saveCollectionState()
 })
 </script>
 
