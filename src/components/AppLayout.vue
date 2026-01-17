@@ -91,7 +91,14 @@
             </a-button>
             <a-dropdown v-else>
               <a-button type="text" class="user-btn">
-                <icon-user />
+                <a-avatar :size="24" v-if="userInfo?.images?.avatar?.full" style="margin-right: 8px;">
+                  <img 
+                    :src="userInfo.images.avatar.full" 
+                    style="width: 100%; height: 100%; object-fit: cover;" 
+                    referrerpolicy="no-referrer"
+                  />
+                </a-avatar>
+                <icon-user v-else style="margin-right: 8px;" />
                 {{ userInfo?.username || '用户' }}
                 <icon-down />
               </a-button>
@@ -139,6 +146,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, provide, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Message } from '@arco-design/web-vue' // Add this import
 import { 
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
   IconHome, IconStar, IconBookmark, IconArrowLeft,
@@ -194,6 +202,7 @@ const checkLoginStatus = async () => {
 const loadUserProfile = async () => {
   try {
     const profile = await invoke('get_user_profile')
+    console.log('User Profile:', profile)
     if (profile) userInfo.value = (profile as any).user
   } catch (error) { console.error(error) }
 }
@@ -205,9 +214,32 @@ provide('refreshUserInfo', loadUserProfile)
 const setupOAuthListener = () => {
   listen<string>("oauth-callback", async (event) => {
     if (event.payload) {
-      await invoke("get_token", { code: event.payload })
-      isLoggedIn.value = true
-      await loadUserProfile()
+      try {
+        await invoke("get_token", { code: event.payload })
+        
+        Message.success('登录成功，正在同步数据...')
+        
+        // 强制重新加载用户信息（带重试机制）
+        await loadUserProfile()
+        
+        if (!userInfo.value) {
+          console.log('用户信息加载失败，1秒后重试...')
+          await new Promise(r => setTimeout(r, 1000))
+          await loadUserProfile()
+        }
+        
+        // 显式更新状态
+        if (userInfo.value) {
+          isLoggedIn.value = true
+          Message.success(`欢迎回来, ${userInfo.value.username}`)
+        } else {
+          // 如果获取 profile 失败，尝试仅设置登录态
+          isLoggedIn.value = true
+        }
+      } catch (e) {
+        console.error(e)
+        Message.error('登录失败，请重试')
+      }
     }
   })
 }

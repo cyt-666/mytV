@@ -128,11 +128,11 @@ impl ApiClient {
         headers.insert("trakt-api-version", HeaderValue::from_static("2"));
         
         let client_id = get_config().client_id.clone();
-        println!("使用 Client ID (前8位): {}...", &client_id[..8.min(client_id.len())]);
+        debug!("使用 Client ID (前8位): {}...", &client_id[..8.min(client_id.len())]);
         headers.insert("trakt-api-key", HeaderValue::from_str(&client_id).unwrap());
         
         let client = if let Some(token) = token {
-            println!("检测到 Token，使用认证模式");
+            debug!("检测到 Token，使用认证模式");
             let rt = Runtime::new().unwrap();
             let token = rt.block_on(token.lock());
             headers.insert("Authorization", HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str()).unwrap());
@@ -143,7 +143,7 @@ impl ApiClient {
                     .unwrap();
             ApiClient { client, authenticated: true }
         } else {
-            println!("未检测到 Token，使用未认证模式");
+            debug!("未检测到 Token，使用未认证模式");
             let client = ClientBuilder::new()
                 .connect_timeout(Duration::from_secs(5))
                 .default_headers(headers)
@@ -173,10 +173,10 @@ impl ApiClient {
             url.query_pairs_mut().append_pair("page", page.to_string().as_str());
         }
         
-        println!("=== API 请求详情 ===");
-        println!("URL: {}", url.as_str());
-        println!("Method: {}", method);
-        println!("Authenticated: {}", self.authenticated);
+        debug!("=== API 请求详情 ===");
+        debug!("URL: {}", url.as_str());
+        debug!("Method: {}", method);
+        debug!("Authenticated: {}", self.authenticated);
         
         let method = method.to_lowercase();
         let mut req: RequestBuilder;
@@ -220,33 +220,33 @@ impl ApiClient {
         }
         
         if self.authenticated {
-            println!("=== 添加认证头 ===");
+            debug!("=== 添加认证头 ===");
             if let Some(token_state) = app.try_state::<Mutex<Token>>() {
                 let token = token_state.lock().await;
-                println!("Token access_token (前20字符): {}...", &token.access_token[..20.min(token.access_token.len())]);
+                debug!("Token access_token (前20字符): {}...", &token.access_token[..20.min(token.access_token.len())]);
                 req = req.header("Authorization", format!("Bearer {}", token.access_token));
             } else {
-                println!("警告: authenticated=true 但找不到 Token state!");
+                warn!("警告: authenticated=true 但找不到 Token state!");
             }
         } else {
-            println!("=== 未认证模式，不添加 Authorization 头 ===");
+            debug!("=== 未认证模式，不添加 Authorization 头 ===");
         }
         if let Some(body) = body {
             let body = serde_json::to_string(&body).unwrap();
-            println!("请求体: {:?}", &body);
+            debug!("请求体: {:?}", &body);
             req = req.body(body);
         }
         let req = req.build().unwrap();
         
-        println!("=== 请求 Headers ===");
+        debug!("=== 请求 Headers ===");
         for (name, value) in req.headers() {
-            println!("{}: {:?}", name, value);
+            debug!("{}: {:?}", name, value);
         }
         
         let resp = self.client.execute(req).await;
         match resp {
             Ok(resp) => {
-                println!("请求URL {:?}，响应状态码 {:?}", url.as_str(), resp.status());
+                info!("请求URL {:?}，响应状态码 {:?}", url.as_str(), resp.status());
                 if resp.status().is_success() {
                     let body = resp.text().await;
                     match body {
@@ -254,21 +254,22 @@ impl ApiClient {
                             Ok(serde_json::from_str(&body).unwrap())
                         }
                         Err(e) => {
+                            error!("解析响应体失败: {:?}", e);
                             Err(500)
                         }
                     }
                 } else {
                     let status = resp.status().as_u16();
                     if status == 401 {
-                        println!("收到 401 响应，尝试刷新 token");
+                        warn!("收到 401 响应，尝试刷新 token");
                         let result = refresh_token(app).await;
                         if let Ok(token) = result {
-                            println!("刷新token成功: {:?}", &token);
+                            info!("刷新token成功: {:?}", &token);
                             self.refresh_client(Some(token));
                             // Token 刷新成功，但不自动重试请求
                             // 让调用者处理重试逻辑
                         } else {
-                            println!("刷新token失败: {:?}", &result);
+                            error!("刷新token失败: {:?}", &result);
                             // 清除存储中的无效 token
                             let store = app.store("app_data.json").unwrap();
                             let _ = store.delete("token");
@@ -290,7 +291,8 @@ impl ApiClient {
                     Err(status)
                 }
             }
-            Err(_) => {
+            Err(e) => {
+                error!("请求失败: {:?}", e);
                 Err(500)
             }
         }

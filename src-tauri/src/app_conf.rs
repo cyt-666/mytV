@@ -20,12 +20,14 @@ impl AppConf {
         let oauth_port = option_env!("TRAKT_OAUTH_PORT");
 
         if let (Some(id), Some(secret), Some(uri)) = (client_id, client_secret, redirect_uri) {
-            return AppConf {
-                client_id: id.to_string(),
-                client_secret: secret.to_string(),
-                redirect_uri: uri.to_string(),
-                oauth_port: oauth_port.and_then(|p| p.parse().ok()).unwrap_or(4396),
-            };
+            if !id.is_empty() && !secret.is_empty() {
+                return AppConf {
+                    client_id: id.to_string(),
+                    client_secret: secret.to_string(),
+                    redirect_uri: uri.to_string(),
+                    oauth_port: oauth_port.and_then(|p| p.parse().ok()).unwrap_or(4396),
+                };
+            }
         }
 
         Self::load_from_file()

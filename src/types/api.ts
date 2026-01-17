@@ -253,8 +253,11 @@ export interface User {
   twitter?: string;
   joined_at: string;
   last_login_at: string;
-  avatar?: string;
-  cover?: string;
+  images?: {
+    avatar: {
+      full: string;
+    };
+  };
 }
 
 // 用户统计

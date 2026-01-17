@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { IconDelete } from '@arco-design/web-vue/es/icon'
@@ -90,6 +90,15 @@ const loading = ref(false)
 const watchlistItems = ref<ExtendedMedia[]>([])
 const filterType = ref('')
 const sortBy = ref('added_desc')
+
+// 监听用户登录状态变化
+watch(() => userInfo.value, (newVal) => {
+  if (newVal?.username) {
+    loadWatchlist()
+  } else {
+    watchlistItems.value = []
+  }
+})
 
 // 计算属性
 const filteredItems = computed(() => {

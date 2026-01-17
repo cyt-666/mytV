@@ -4,14 +4,21 @@
       <div class="profile-header">
         <div class="profile-info">
           <div class="avatar">
-            <a-avatar :size="80" v-if="userInfo?.avatar">
-              <img :src="userInfo.avatar" :alt="userInfo.username" />
+            <a-avatar :size="80" v-if="userInfo?.images?.avatar?.full">
+              <img 
+                :src="userInfo.images.avatar.full" 
+                :alt="userInfo.username" 
+                style="width: 100%; height: 100%; object-fit: cover;"
+                referrerpolicy="no-referrer"
+              />
             </a-avatar>
             <a-avatar :size="80" v-else>
               <icon-user />
             </a-avatar>
           </div>
           <div class="user-details">
+            <!-- 临时调试：显示图片 URL -->
+            <!-- <div style="font-size: 10px; color: red;">{{ userInfo?.images?.avatar?.full }}</div> -->
             <h1 class="username">{{ userInfo?.username || '用户名' }}</h1>
             <p class="user-bio">
               {{ userInfo?.name || 'Trakt 用户' }} • 
@@ -94,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { 
   IconUser, IconSettings, IconBookmark, 
   IconHeart, IconCalendarClock, IconRight 
@@ -107,6 +114,15 @@ const { userInfo, isLoggedIn } = useAuth()
 
 const userStats = ref<UserStats | null>(null)
 const loading = ref(false)
+
+// 监听登录状态变化
+watch(isLoggedIn, (val) => {
+  if (val && userInfo.value?.ids?.slug) {
+    fetchUserStats()
+  } else {
+    userStats.value = null
+  }
+})
 
 // 获取用户统计数据
 const fetchUserStats = async () => {
