@@ -10,8 +10,8 @@
           indicator-type="dot"
           indicator-position="bottom"
         >
-          <a-carousel-item 
-            v-for="item in featuredMovies" 
+          <a-carousel-item
+            v-for="item in featuredMovies"
             :key="item.ids?.trakt"
           >
             <div class="hero-slide" :style="getHeroBackground(item)">
@@ -48,33 +48,33 @@
 
       <!-- 内容分类标签 -->
       <section class="category-tabs">
-        <a-tabs 
-          v-model:active-key="activeTab" 
-          type="line" 
+        <a-tabs
+          v-model:active-key="activeTab"
+          type="line"
           size="large"
           @change="handleTabChange"
         >
           <a-tab-pane key="trending" title="🔥 热门">
-            <a-tabs 
-              v-model:active-key="trendingSubTab" 
-              type="card" 
+            <a-tabs
+              v-model:active-key="trendingSubTab"
+              type="card"
               size="small"
               @change="handleTrendingSubTabChange"
               class="trending-sub-tabs"
             >
               <a-tab-pane key="movies" title="电影">
-                <MediaGrid 
-                  :items="trendingMovies" 
+                <MediaGrid
+                  :items="trendingMovies"
                   :loading="loading.trendingMovies"
                   :loading-more="loading.trendingMovies"
                   @load-more="loadMoreTrendingMovies"
                   media-type="movie"
                 />
               </a-tab-pane>
-              
+
               <a-tab-pane key="shows" title="电视剧">
-                <MediaGrid 
-                  :items="trendingShows" 
+                <MediaGrid
+                  :items="trendingShows"
                   :loading="loading.trendingShows"
                   :loading-more="loading.trendingShows"
                   @load-more="loadMoreTrendingShows"
@@ -83,28 +83,28 @@
               </a-tab-pane>
             </a-tabs>
           </a-tab-pane>
-          
+
           <a-tab-pane key="movies" title="🎬 推荐电影">
-            <MediaGrid 
-              :items="recommendedMovies" 
+            <MediaGrid
+              :items="recommendedMovies"
               :loading="loading.movies"
               :has-more="false"
               media-type="movie"
             />
           </a-tab-pane>
-          
+
           <a-tab-pane key="shows" title="📺 推荐剧集">
-            <MediaGrid 
-              :items="recommendedShows" 
+            <MediaGrid
+              :items="recommendedShows"
               :loading="loading.shows"
               :has-more="false"
               media-type="show"
             />
           </a-tab-pane>
-          
+
           <a-tab-pane key="recent" title="🆕 最新发布">
-            <MediaGrid 
-              :items="recentItems" 
+            <MediaGrid
+              :items="recentItems"
               :loading="loading.recent"
               @load-more="loadMoreRecent"
               media-type="auto"
@@ -119,8 +119,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { 
-  IconStarFill, IconPlayArrow, IconPlusCircle 
+import {
+  IconStarFill, IconPlayArrow, IconPlusCircle
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse } from '../types/api'
@@ -247,16 +247,16 @@ const loadFeaturedData = async () => {
   loading.value.featured = true
   try {
     const trendingData = await invoke<MovieTrendingResponse>('movie_trending')
-    
+
     const movies: Movie[] = []
     for (const item of trendingData.slice(0, 5)) {
       if (item.movie) {
         movies.push(item.movie)
       }
     }
-    
+
     featuredMovies.value = movies
-    
+
     // 加载翻译
     movies.forEach(async (movie) => {
       if (movie.ids?.trakt) {
@@ -275,7 +275,7 @@ const loadFeaturedData = async () => {
 
 const loadMoviesData = async () => {
   if (loading.value.movies || dataLoaded.value.movies) return
-  
+
   loading.value.movies = true
   try {
     // 调用API获取推荐电影
@@ -283,7 +283,7 @@ const loadMoviesData = async () => {
     recommendedMovies.value = movies
     dataLoaded.value.movies = true
     console.log('加载推荐电影')
-    
+
     // 在后台预加载翻译
     preloadMovieTranslations(movies, (loaded, total) => {
       console.log(`翻译加载进度: ${loaded}/${total}`)
@@ -297,7 +297,7 @@ const loadMoviesData = async () => {
 
 const loadShowsData = async () => {
   if (loading.value.shows || dataLoaded.value.shows) return
-  
+
   loading.value.shows = true
   try {
     recommendedShows.value = await invoke<ShowsRecommendResponse>("shows_recommand")
@@ -311,7 +311,7 @@ const loadShowsData = async () => {
 
 const loadRecentData = async () => {
   if (loading.value.recent || dataLoaded.value.recent) return
-  
+
   loading.value.recent = true
   try {
     // 调用API获取最新发布
@@ -339,7 +339,7 @@ const loadMoreTrendingMovies = async () => {
         }
       }
       trendingMovies.value.push(...movies)
-      
+
       // 在后台预加载翻译
       preloadMovieTranslations(movies, (loaded, total) => {
         console.log(`更多热门电影翻译加载进度: ${loaded}/${total}`)
@@ -401,7 +401,7 @@ const loadTrendingSubTabData = async (subTab: string) => {
 
 const loadTrendingMoviesData = async () => {
   if (loading.value.trendingMovies || dataLoaded.value.trendingMovies) return
-  
+
   loading.value.trendingMovies = true
   try {
     const res = await invoke<MovieTrendingResponse>("movie_trending")
@@ -416,7 +416,7 @@ const loadTrendingMoviesData = async () => {
       }
       trendingMovies.value.push(...movies)
       dataLoaded.value.trendingMovies = true
-      
+
       // 在后台预加载翻译
       preloadMovieTranslations(movies, (loaded, total) => {
         console.log(`热门电影翻译加载进度: ${loaded}/${total}`)
@@ -432,7 +432,7 @@ const loadTrendingMoviesData = async () => {
 
 const loadTrendingShowsData = async () => {
   if (loading.value.trendingShows || dataLoaded.value.trendingShows) return
-  
+
   loading.value.trendingShows = true
   try {
     // 调用API获取热门电视剧
@@ -456,25 +456,18 @@ const loadTrendingShowsData = async () => {
 
 // 生命周期
 onMounted(async () => {
-  try {
-    const res = await invoke<string>('debug_config')
-    alert(res)
-  } catch (e) {
-    console.error(e)
-  }
-
   // 尝试恢复状态
   const savedState = restoreHomeState()
-  
+
   if (savedState) {
     // 恢复保存的状态
     activeTab.value = savedState.activeTab
     trendingSubTab.value = savedState.trendingSubTab
-    
+
     // 加载数据
     await loadFeaturedData()
     await loadTabData(activeTab.value)
-    
+
     // 恢复滚动位置
     if (savedState.scrollPosition > 0) {
       nextTick(() => {
@@ -487,7 +480,7 @@ onMounted(async () => {
     if (type && ['trending', 'movies', 'shows', 'recent'].includes(type)) {
       activeTab.value = type
     }
-    
+
     // 加载初始数据
     await loadFeaturedData()
     await loadTabData(activeTab.value)
@@ -520,7 +513,7 @@ watch(() => route.query.type, (newType, oldType) => {
 :deep(.page-container) {
   max-width: 1600px;
   /* 恢复左右 padding，让内容不贴边 */
-  padding: 0 40px 40px 40px; 
+  padding: 0 40px 40px 40px;
   padding-top: 0;
 }
 
@@ -529,7 +522,7 @@ watch(() => route.query.type, (newType, oldType) => {
   position: relative;
   margin-bottom: 48px;
   /* 关键：悬浮卡片圆角样式 */
-  border-radius: 24px; 
+  border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0,0,0,0.15); /* 增加悬浮阴影 */
   transform: translateZ(0); /* 修复 Safari 圆角 */

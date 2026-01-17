@@ -13,7 +13,7 @@ jobs:
       tag_exists: ${{ steps.check-tag.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Get version from package.json
         id: get-version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
@@ -54,14 +54,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest"
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -93,10 +93,11 @@ jobs:
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
           TRAKT_REDIRECT_URI: ${{ secrets.TRAKT_REDIRECT_URI }}
+          TRAKT_OAUTH_PORT: ${{ secrets.TRAKT_OAUTH_PORT }}
         with:
           tagName: v${{ needs.check-version.outputs.version }}
-          releaseName: 'App v${{ needs.check-version.outputs.version }}'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseName: "App v${{ needs.check-version.outputs.version }}"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
