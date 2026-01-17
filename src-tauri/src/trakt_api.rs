@@ -7,6 +7,7 @@ pub mod search;
 pub mod sync;
 pub mod translation_cache;
 pub mod calendars;
+pub mod utils;
 
 use auth::refresh_token;
 use tauri::{AppHandle, Manager};
@@ -145,15 +146,24 @@ impl ApiClient {
         
         let client = if let Some(token) = token {
             debug!("检测到 Token，使用认证模式");
-            let rt = Runtime::new().unwrap();
-            let token = rt.block_on(token.lock());
-            headers.insert("Authorization", HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str()).unwrap());
-            let client = ClientBuilder::new()
+            // 在 setup 阶段，没有其他并发访问，可以使用 try_lock
+            if let Ok(token) = token.try_lock() {
+                headers.insert("Authorization", HeaderValue::from_str(format!("Bearer {}", token.access_token).as_str()).unwrap());
+                let client = ClientBuilder::new()
+                        .connect_timeout(Duration::from_secs(5))
+                        .default_headers(headers)
+                        .build()
+                        .unwrap();
+                ApiClient { client, authenticated: true }
+            } else {
+                warn!("无法获取 Token 锁，回退到未认证模式");
+                let client = ClientBuilder::new()
                     .connect_timeout(Duration::from_secs(5))
                     .default_headers(headers)
                     .build()
                     .unwrap();
-            ApiClient { client, authenticated: true }
+                ApiClient { client, authenticated: false }
+            }
         } else {
             debug!("未检测到 Token，使用未认证模式");
             let client = ClientBuilder::new()

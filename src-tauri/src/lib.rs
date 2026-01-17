@@ -58,7 +58,8 @@ pub fn run() {
             trakt_api::calendars::get_calendar_movies,
             trakt_api::calendars::get_calendar_shows,
             trakt_api::calendars::get_calendar_new_shows,
-            trakt_api::calendars::get_calendar_premieres
+            trakt_api::calendars::get_calendar_premieres,
+            trakt_api::utils::get_proxied_image
         ])
         .setup(|app|{
             let store = app.store("app_data.json");
@@ -76,6 +77,12 @@ pub fn run() {
             }
             let client = ApiClient::new(&app.handle());
             app.manage(Mutex::new(client));
+
+            #[cfg(target_os = "windows")]
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_decorations(false);
+            }
+            
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -7,6 +7,7 @@
       :width="240"
       :collapsed-width="68"
       class="app-sider"
+      :class="{ 'is-macos': isMacOS }"
       theme="light"
     >
       <div class="sider-logo" :class="{ 'collapsed': collapsed }">
@@ -92,9 +93,9 @@
             </a-button>
             <a-dropdown v-else>
               <a-button type="text" class="user-btn">
-                <a-avatar :size="24" v-if="userInfo?.images?.avatar?.full" style="margin-right: 8px;">
+                <a-avatar :size="24" v-if="avatarUrl" style="margin-right: 8px;">
                   <img 
-                    :src="userInfo.images.avatar.full" 
+                    :src="avatarUrl" 
                     style="width: 100%; height: 100%; object-fit: cover;" 
                     referrerpolicy="no-referrer"
                   />
@@ -117,7 +118,7 @@
           </a-space>
 
           <!-- 窗口控制按钮 -->
-          <div class="window-controls">
+          <div class="window-controls" v-if="!isMacOS">
             <div class="control-btn" @click="minimizeWindow">
               <icon-minus />
             </div>
@@ -170,6 +171,28 @@ const isLoggedIn = ref(false)
 const userInfo = ref<User | null>(null)
 const showGlobalBackButton = ref(false)
 const isMaximized = ref(false) // 追踪最大化状态
+const isMacOS = ref(navigator.userAgent.includes('Mac OS X')) // 检测 macOS
+
+const avatarUrl = ref<string | null>(null)
+
+watch(() => userInfo.value?.images?.avatar?.full, async (url) => {
+  if (!url) {
+    avatarUrl.value = null
+    return
+  }
+  
+  if (isMacOS.value) {
+    try {
+      const proxied = await invoke<string>('get_proxied_image', { url })
+      avatarUrl.value = proxied
+      return
+    } catch (e) {
+      console.warn('Avatar proxy failed, falling back to direct URL', e)
+    }
+  }
+  
+  avatarUrl.value = url.startsWith('http') ? url.replace(/^http:/, 'https:') : `https://${url}`
+}, { immediate: true })
 
 const selectedKeys = computed(() => {
   const path = route.path
@@ -343,6 +366,15 @@ onBeforeUnmount(() => {
   z-index: 10;
   border-right: none !important; /* 强制去掉分割线 */
   box-shadow: none !important;
+}
+
+/* macOS 适配：增加顶部内边距，避开红绿灯 */
+.app-sider.is-macos {
+  padding-top: 32px; 
+}
+.app-sider.is-macos .sider-logo {
+  /* Logo区域需要设为可拖拽，方便移动窗口 */
+  -webkit-app-region: drag;
 }
 
 /* 强制覆盖 Arco 默认边框 */

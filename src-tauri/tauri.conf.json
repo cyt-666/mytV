@@ -15,12 +15,14 @@
         "title": "mytv",
         "width": 1200,
         "height": 800,
-        "decorations": false,
-        "shadow": true
+        "decorations": true,
+        "shadow": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.trakt.tv https://api-v2launch.trakt.tv ws: localhost:*;"
     }
   },
   "plugins": {},

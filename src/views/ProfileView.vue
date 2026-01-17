@@ -4,10 +4,10 @@
       <div class="profile-header">
         <div class="profile-info">
           <div class="avatar">
-            <a-avatar :size="80" v-if="userInfo?.images?.avatar?.full">
+            <a-avatar :size="80" v-if="userInfo && avatarUrl">
               <img 
-                :src="userInfo.images.avatar.full" 
-                :alt="userInfo.username" 
+                :src="avatarUrl" 
+                :alt="userInfo?.username || 'User'" 
                 style="width: 100%; height: 100%; object-fit: cover;"
                 referrerpolicy="no-referrer"
               />
@@ -114,6 +114,29 @@ const { userInfo, isLoggedIn } = useAuth()
 
 const userStats = ref<UserStats | null>(null)
 const loading = ref(false)
+const isMacOS = navigator.userAgent.includes('Mac OS X')
+
+// 头像 URL 处理
+const avatarUrl = ref<string | null>(null)
+
+watch(() => userInfo.value?.images?.avatar?.full, async (url) => {
+  if (!url) {
+    avatarUrl.value = null
+    return
+  }
+  
+  if (isMacOS) {
+    try {
+      const proxied = await invoke<string>('get_proxied_image', { url })
+      avatarUrl.value = proxied
+      return
+    } catch (e) {
+      console.warn('Avatar proxy failed, falling back to direct URL', e)
+    }
+  }
+  
+  avatarUrl.value = url.startsWith('http') ? url.replace(/^http:/, 'https:') : `https://${url}`
+}, { immediate: true })
 
 // 监听登录状态变化
 watch(isLoggedIn, (val) => {
