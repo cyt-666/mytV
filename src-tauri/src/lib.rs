@@ -7,7 +7,17 @@ use tauri_plugin_store::StoreExt;
 use token::Token;
 use tokio::sync::Mutex;
 use trakt_api::ApiClient;
+use app_conf::get_config;
 
+#[tauri::command]
+fn debug_config() -> String {
+    let conf = get_config();
+    format!("ID: {}, Redirect: {}, Port: {}", 
+        if conf.client_id.is_empty() { "EMPTY" } else { "SET" },
+        conf.redirect_uri,
+        conf.oauth_port
+    )
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,6 +27,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            debug_config,
             trakt_api::auth::start_trakt_user_auth,
             trakt_api::auth::get_token,
             trakt_api::auth::check_login_status,
