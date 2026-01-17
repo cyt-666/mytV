@@ -7,10 +7,10 @@ use serde_json::json;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SyncResponse {
-    pub added: SyncStats,
-    pub deleted: SyncStats,
-    pub existing: SyncStats,
-    pub not_found: NotFound,
+    pub added: Option<SyncStats>,
+    pub deleted: Option<SyncStats>,
+    pub existing: Option<SyncStats>,
+    pub not_found: Option<NotFound>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

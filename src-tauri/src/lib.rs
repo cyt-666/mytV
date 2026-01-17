@@ -54,7 +54,11 @@ pub fn run() {
             trakt_api::translation_cache::get_show_translation_cached,
             trakt_api::translation_cache::get_season_translation_cached,
             trakt_api::translation_cache::clear_expired_translations,
-            trakt_api::translation_cache::get_translation_cache_stats
+            trakt_api::translation_cache::get_translation_cache_stats,
+            trakt_api::calendars::get_calendar_movies,
+            trakt_api::calendars::get_calendar_shows,
+            trakt_api::calendars::get_calendar_new_shows,
+            trakt_api::calendars::get_calendar_premieres
         ])
         .setup(|app|{
             let store = app.store("app_data.json");

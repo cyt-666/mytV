@@ -322,6 +322,17 @@ export type SearchResponse = {
   show?: Show;
 }[];
 
+export interface CalendarMovie {
+  released?: string;
+  movie: Movie;
+}
+
+export interface CalendarShow {
+  first_aired?: string;
+  episode?: Episode;
+  show: Show;
+}
+
 // 电影推荐返回类型（保持向后兼容）
 export interface MovieRecommend extends Movie {}
 

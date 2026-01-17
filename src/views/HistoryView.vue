@@ -33,6 +33,7 @@
             v-model="filterType"
             placeholder="类型筛选"
             :style="{ width: '120px' }"
+            @change="handleFilterChange"
           >
             <a-option value="">全部</a-option>
             <a-option value="movie">电影</a-option>
@@ -50,17 +51,60 @@
         <span class="item-count">{{ historyItems.length }} 条记录</span>
       </div>
 
-      <!-- 历史记录 -->
+      <!-- 时间轴历史记录 -->
+      <div class="timeline-container" v-if="!loading && timelineGroups.length > 0">
+        <div 
+          v-for="group in timelineGroups" 
+          :key="group.label" 
+          class="timeline-group"
+        >
+          <div class="timeline-header">
+            <div class="timeline-dot"></div>
+            <h3 class="timeline-label">{{ group.label }}</h3>
+            <span class="timeline-count">{{ group.items.length }} 条</span>
+          </div>
+          <div class="timeline-content">
+            <MediaGrid
+              :items="group.items"
+              :loading="false"
+              :loading-more="false"
+              :has-more="false"
+              :infinite-scroll="false"
+              :show-meta="true"
+              empty-message=""
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载状态 -->
       <MediaGrid
-        :items="filteredItems"
-        :loading="loading"
-        :loading-more="loadingMore"
-        :has-more="hasMore"
-        :infinite-scroll="true"
-        :show-meta="true"
+        v-if="loading"
+        :items="[]"
+        :loading="true"
+        :loading-more="false"
+        :has-more="false"
+        :infinite-scroll="false"
         empty-message="还没有观看记录"
-        @load-more="handleLoadMore"
       />
+
+      <!-- 空状态 -->
+      <div v-if="!loading && timelineGroups.length === 0 && historyItems.length === 0" class="empty-state">
+        <p>还没有观看记录</p>
+      </div>
+
+      <!-- 加载更多 -->
+      <div v-if="hasMore && !loading" class="load-more-container">
+        <a-button 
+          v-if="!loadingMore"
+          @click="handleLoadMore"
+          type="outline"
+          size="large"
+        >
+          加载更多
+        </a-button>
+        <a-spin v-else :size="24" />
+      </div>
     </div>
   </div>
 </template>
@@ -91,7 +135,7 @@ interface HistoryItem {
   }
 }
 
-type HistoryMedia = (Movie | Show) & { watch_count?: number }
+type HistoryMedia = (Movie | Show) & { watch_count?: number, watched_at?: string }
 
 const { userInfo } = useAuth()
 const { saveState, restoreState } = usePageState('history')
@@ -129,7 +173,61 @@ const filteredItems = computed(() => {
     })
   }
   
+  // 按时间倒序排序（时间轴形式）
+  items.sort((a, b) => {
+    if (a.watched_at && b.watched_at) {
+      return new Date(b.watched_at).getTime() - new Date(a.watched_at).getTime()
+    }
+    return 0
+  })
+  
   return items
+})
+
+// 时间轴分组
+interface TimelineGroup {
+  label: string
+  items: HistoryMedia[]
+}
+
+const timelineGroups = computed<TimelineGroup[]>(() => {
+  const items = filteredItems.value
+  if (items.length === 0) return []
+  
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+  
+  // 按日期分组，使用 Map 保持插入顺序
+  const groupsMap = new Map<string, HistoryMedia[]>()
+  
+  for (const item of items) {
+    let label: string
+    
+    if (!item.watched_at) {
+      label = '未知日期'
+    } else {
+      const watchedDate = new Date(item.watched_at)
+      const watchedDay = new Date(watchedDate.getFullYear(), watchedDate.getMonth(), watchedDate.getDate())
+      
+      if (watchedDay.getTime() >= today.getTime()) {
+        label = '今天'
+      } else if (watchedDay.getTime() >= yesterday.getTime()) {
+        label = '昨天'
+      } else {
+        // 显示具体日期：1月15日
+        label = `${watchedDate.getMonth() + 1}月${watchedDate.getDate()}日`
+      }
+    }
+    
+    if (!groupsMap.has(label)) {
+      groupsMap.set(label, [])
+    }
+    groupsMap.get(label)!.push(item)
+  }
+  
+  // 转换为数组，顺序已经按时间倒序（因为 items 本身是倒序的）
+  return Array.from(groupsMap.entries()).map(([label, items]) => ({ label, items }))
 })
 
 const saveHistoryState = () => {
@@ -144,6 +242,10 @@ const saveHistoryState = () => {
     timestamp: Date.now()
   }
   saveState(state)
+}
+
+const handleFilterChange = () => {
+  saveHistoryState()
 }
 
 const restoreHistoryState = () => {
@@ -256,6 +358,7 @@ const loadHistory = async (isLoadMore = false) => {
               seenMovies.add(movieId)
               item.movie.media_type = 'movie'
               ;(item.movie as HistoryMedia).watch_count = 1
+              ;(item.movie as HistoryMedia).watched_at = item.watched_at
               items.push(item.movie as HistoryMedia)
             }
           }
@@ -276,6 +379,7 @@ const loadHistory = async (isLoadMore = false) => {
               seenShows.add(showId)
               item.show.media_type = 'show'
               ;(item.show as HistoryMedia).watch_count = 1
+              ;(item.show as HistoryMedia).watched_at = item.watched_at
               items.push(item.show as HistoryMedia)
             }
           }
@@ -409,6 +513,85 @@ onBeforeUnmount(() => {
 .item-count {
   font-size: 14px;
   color: #8e8e93;
+}
+
+/* 时间轴样式 */
+.timeline-container {
+  position: relative;
+  padding-left: 24px;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #165dff, #86c1ff);
+  border-radius: 1px;
+}
+
+.timeline-group {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.timeline-group:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  width: 16px;
+  height: 16px;
+  background: #165dff;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.3);
+}
+
+.timeline-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.timeline-count {
+  font-size: 14px;
+  color: #8e8e93;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.timeline-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8e8e93;
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
 }
 
 @media (max-width: 768px) {

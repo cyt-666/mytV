@@ -5,7 +5,8 @@ pub mod movie;
 pub mod shows;
 pub mod search;
 pub mod sync;
-pub mod translation_cache; 
+pub mod translation_cache;
+pub mod calendars;
 
 use auth::refresh_token;
 use tauri::{AppHandle, Manager};
@@ -51,6 +52,7 @@ pub struct Api {
     pub movie: MovieApi,
     pub shows: ShowApi,
     pub sync: SyncApi,
+    pub calendars: CalendarsApi,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -107,6 +109,15 @@ pub struct SyncApi {
     pub add_to_watchlist: Entry,
     pub remove_from_watchlist: Entry,
     pub add_to_history: Entry,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct CalendarsApi {
+    pub movies: Entry,
+    pub shows: Entry,
+    pub new_shows: Entry,
+    pub season_premieres: Entry,
+    pub dvd: Entry,
 }
 
 impl Api {

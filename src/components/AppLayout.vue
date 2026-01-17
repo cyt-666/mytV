@@ -20,6 +20,7 @@
         :selected-keys="selectedKeys"
         :collapsed="collapsed"
         class="app-menu"
+        :class="{ 'collapsed': collapsed }"
         @menu-item-click="handleMenuClick"
       >
         <a-menu-item key="home">
@@ -65,7 +66,7 @@
             class="global-back-button"
             @click="handleGlobalBack"
           >
-            <icon-arrow-left :size="18" />
+            <icon-arrow-left :size="32" />
           </a-button>
         </div>
         
@@ -134,7 +135,7 @@
       <a-layout-content class="app-content">
         <router-view v-slot="{ Component, route }">
           <keep-alive v-if="shouldKeepAlive(route)">
-            <component :is="Component" :key="route.fullPath" />
+            <component :is="Component" :key="route.path" />
           </keep-alive>
           <component v-else :is="Component" :key="route.fullPath" />
         </router-view>
@@ -340,7 +341,17 @@ onBeforeUnmount(() => {
   background-color: #ffffff;
   position: relative;
   z-index: 10;
-  border-right: none; /* 去掉分割线 */
+  border-right: none !important; /* 强制去掉分割线 */
+  box-shadow: none !important;
+}
+
+/* 强制覆盖 Arco 默认边框 */
+:deep(.arco-layout-sider) {
+  border-right: none !important;
+}
+:deep(.arco-layout-sider-light) {
+  border-right: none !important;
+  box-shadow: none !important;
 }
 
 /* Logo 区域 */
@@ -396,6 +407,10 @@ onBeforeUnmount(() => {
 /* 菜单样式 */
 .app-menu {
   padding: 0 16px; /* 增加左右留白 */
+  transition: padding 0.2s;
+}
+.app-menu.collapsed {
+  padding: 0 8px; /* 折叠时减小留白，确保图标居中 */
 }
 
 :deep(.arco-menu-inner) {
@@ -446,13 +461,63 @@ onBeforeUnmount(() => {
 }
 
 /* 折叠后的菜单修正 */
-:deep(.arco-menu-collapsed .arco-menu-item) {
+:deep(.arco-menu-collapsed .arco-menu-item),
+:deep(.arco-menu-collapsed .arco-menu-inline-header),
+:deep(.arco-menu-collapsed .arco-menu-pop-header) {
+  justify-content: center !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+:deep(.arco-menu-collapsed .arco-menu-icon) {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  font-size: 20px !important;
+  display: flex;
   justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* 确保子菜单标题图标也居中 */
+:deep(.arco-menu-collapsed .arco-menu-inline-header .arco-icon),
+:deep(.arco-menu-collapsed .arco-menu-pop-header .arco-icon) {
+  margin: 0 !important;
+}
+
+/* 彻底隐藏折叠后的文字 */
+:deep(.arco-menu-collapsed .arco-menu-title),
+:deep(.arco-menu-collapsed .arco-menu-item .arco-menu-title),
+:deep(.arco-menu-collapsed .arco-menu-inline-header .arco-menu-title),
+:deep(.arco-menu-collapsed .arco-menu-pop-header .arco-menu-title) {
+  display: none !important;
+  width: 0 !important;
+  opacity: 0 !important;
+}
+
+:deep(.arco-menu-collapsed .arco-menu-inline-header .arco-menu-icon-suffix),
+:deep(.arco-menu-collapsed .arco-menu-pop-header .arco-menu-icon-suffix) {
+  display: none !important;
+}
+
+/* 修复折叠后的子菜单缩进导致的不对齐 */
+:deep(.arco-menu-collapsed .arco-menu-item-indent) {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* 选中状态修正 */
+:deep(.arco-menu-collapsed .arco-menu-selected) {
+  justify-content: center !important;
+}
+
+/* 确保 Logo 区域折叠时也居中 */
+.sider-logo.collapsed .logo-wrapper {
+  justify-content: center !important;
   padding: 0 !important;
 }
-:deep(.arco-menu-collapsed .arco-menu-icon) {
-  margin-right: 0;
-}
+
 
 /* 底部触发器 - 悬浮胶囊 */
 .sider-trigger {
@@ -567,15 +632,26 @@ onBeforeUnmount(() => {
 .user-btn:hover { background-color: #f7f8fa; }
 
 .global-back-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  color: #1d1d1f;
-  background: #f7f8fa;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px; /* 圆形 */
+  color: #1d1d1f; /* 深色增强对比 */
+  background: transparent; /* 默认无背景 */
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .global-back-button:hover {
-  background-color: #1d1d1f;
-  color: white;
+  background-color: #f2f3f5; /* 悬停时显示浅灰背景 */
+  transform: scale(1.1); /* 稍微放大更多一点 */
+}
+.global-back-button:active {
+  transform: scale(0.95);
+  background-color: #e5e6eb;
+}
+.global-back-button:active {
+  transform: scale(0.95);
 }
 
 /* 内容区域 */

@@ -25,11 +25,29 @@
             </div>
             
             <div class="actions">
-              <a-button @click="markSeasonWatched" type="primary" status="success">
-                <icon-check /> 标记本季为已观看
+              <a-button 
+                @click="markSeasonWatched" 
+                type="primary" 
+                status="success"
+                :loading="actionLoading.watched"
+              >
+                <icon-check /> 标记已看
               </a-button>
-              <a-button @click="toggleCollection" :type="isInCollection ? 'primary' : 'secondary'">
+              <a-button 
+                @click="handleToggleCollection" 
+                :type="isInCollection ? 'primary' : 'secondary'"
+                :status="isInCollection ? 'success' : undefined"
+                :loading="actionLoading.collection"
+              >
                 <icon-heart /> {{ isInCollection ? '已入库' : '入库' }}
+              </a-button>
+              <a-button 
+                @click="handleToggleWatchlist" 
+                :type="isInWatchlist ? 'primary' : 'secondary'"
+                :status="isInWatchlist ? 'warning' : undefined"
+                :loading="actionLoading.watchlist"
+              >
+                <icon-bookmark /> {{ isInWatchlist ? '已想看' : '想看' }}
               </a-button>
             </div>
           </div>
@@ -75,9 +93,9 @@ import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { 
   IconImage, IconStarFill, IconCheck, 
-  IconExclamationCircle, IconHeart 
+  IconExclamationCircle, IconHeart, IconBookmark
 } from '@arco-design/web-vue/es/icon'
-import type { Episode } from '../types/api'
+import type { Episode, Seasons } from '../types/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -86,7 +104,14 @@ const loading = ref(false)
 const error = ref('')
 const episodes = ref<Episode[]>([])
 const seasonNumber = ref(0)
+const traktId = ref<number | null>(null)
 const isInCollection = ref(false)
+const isInWatchlist = ref(false)
+const actionLoading = ref({
+  collection: false,
+  watchlist: false,
+  watched: false
+})
 
 const firstAired = computed(() => episodes.value[0]?.first_aired)
 
@@ -124,14 +149,34 @@ const loadSeason = async () => {
   }
   
   seasonNumber.value = Number(season)
+  
+  // 尝试从query获取traktId
+  if (route.query.traktId) {
+    traktId.value = Number(route.query.traktId)
+  }
+
   loading.value = true
   
   try {
+    // 如果没有traktId，需要先获取季度列表找到它
+    if (!traktId.value) {
+      const seasons = await invoke<Seasons>('show_seasons', { id: Number(id) })
+      const currentSeason = seasons.find(s => s.number === Number(season))
+      if (currentSeason?.ids?.trakt) {
+        traktId.value = currentSeason.ids.trakt
+      }
+    }
+
     const result = await invoke<Episode[]>('get_season_episodes', {
       id: Number(id),
       season: Number(season)
     })
     episodes.value = result
+    
+    // 加载完数据后检查用户状态
+    if (traktId.value) {
+      checkUserStatus()
+    }
   } catch (err) {
     console.error('加载季度详情失败:', err)
     error.value = '加载失败，请稍后重试'
@@ -151,33 +196,112 @@ const goToEpisodeDetail = (episodeNum: number) => {
   })
 }
 
-const markSeasonWatched = async () => {
-  // 实现标记整季观看
+const handleToggleCollection = async () => {
+  if (!traktId.value) {
+    Message.warning('无法获取季度信息')
+    return
+  }
+  
+  actionLoading.value.collection = true
   try {
-    await invoke('mark_as_watched', {
-      mediaType: 'season',
-      traktId: Number(route.params.season) // 注意：这里需要季度的trakt ID，但我们只有show ID和season number
-      // 实际上 mark_as_watched 需要 trakt ID。
-      // get_season_episodes 返回的是 Episode 列表。
-      // 我们没有直接获取 Season 信息的 API 在这里调用。
-      // ShowDetailView 传递过来？或者我们需要先调用 show_seasons 获取 ID？
-    })
-    // 这里有个问题：mark_as_watched 需要季度的 Trakt ID。
-    // 但是路由参数里只有 season number。
-    // 我们需要先 fetch season info 拿到 ID。
-    // 或者修改 get_season_episodes 让它返回包含 season info 的结构？
-    // 目前 get_season_episodes 只返回 Vec<Episode>。
-    
-    // 临时解决方案：先不实现或者提示。
-    Message.warning('功能完善中')
-  } catch (err) {
-    // ...
+    if (isInCollection.value) {
+      await invoke('remove_from_collection', {
+        mediaType: 'season',
+        traktId: traktId.value
+      })
+      isInCollection.value = false
+      Message.success('已移出收藏')
+    } else {
+      await invoke('add_to_collection', {
+        mediaType: 'season',
+        traktId: traktId.value
+      })
+      isInCollection.value = true
+      Message.success('已添加到收藏')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    Message.error('操作失败，请稍后重试')
+  } finally {
+    actionLoading.value.collection = false
   }
 }
 
-const toggleCollection = async () => {
-  // 同上，需要 Season Trakt ID
-  Message.warning('功能完善中')
+const handleToggleWatchlist = async () => {
+  if (!traktId.value) {
+    Message.warning('无法获取季度信息')
+    return
+  }
+  
+  actionLoading.value.watchlist = true
+  try {
+    if (isInWatchlist.value) {
+      await invoke('remove_from_watchlist', {
+        mediaType: 'season',
+        traktId: traktId.value
+      })
+      isInWatchlist.value = false
+      Message.success('已移出想看')
+    } else {
+      await invoke('add_to_watchlist', {
+        mediaType: 'season',
+        traktId: traktId.value
+      })
+      isInWatchlist.value = true
+      Message.success('已添加到想看')
+    }
+  } catch (error) {
+    console.error('想看操作失败:', error)
+    Message.error('操作失败，请稍后重试')
+  } finally {
+    actionLoading.value.watchlist = false
+  }
+}
+
+const markSeasonWatched = async () => {
+  if (!traktId.value) {
+    Message.warning('无法获取季度信息')
+    return
+  }
+  
+  actionLoading.value.watched = true
+  try {
+    await invoke('mark_as_watched', {
+      mediaType: 'season',
+      traktId: traktId.value
+    })
+    Message.success('已标记本季为已观看')
+  } catch (err) {
+    console.error('标记观看失败:', err)
+    Message.error('操作失败')
+  } finally {
+    actionLoading.value.watched = false
+  }
+}
+
+const checkUserStatus = async () => {
+  if (!traktId.value) return
+  
+  try {
+    const [watchlistResult, collectionResult] = await Promise.allSettled([
+      invoke<any[]>('get_watchlist', { id: 'me', selectType: 'seasons' }),
+      invoke<any[]>('get_collection', { id: 'me', selectType: 'seasons' })
+    ])
+    
+    if (watchlistResult.status === 'fulfilled' && watchlistResult.value) {
+      isInWatchlist.value = watchlistResult.value.some(
+        (item: any) => item.season?.ids?.trakt === traktId.value
+      )
+    }
+    
+    if (collectionResult.status === 'fulfilled' && collectionResult.value) {
+      isInCollection.value = collectionResult.value.some(
+        (item: any) => item.season?.ids?.trakt === traktId.value
+      )
+    }
+  } catch (error) {
+    console.error('检查用户状态失败:', error)
+  }
 }
 
 onMounted(() => {

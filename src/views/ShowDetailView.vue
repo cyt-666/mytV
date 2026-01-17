@@ -588,6 +588,9 @@ const goToSeasonDetail = (season: any) => {
     params: {
       id: showDetails.value.ids.trakt,
       season: season.number
+    },
+    query: {
+      traktId: season.ids.trakt
     }
   })
 }

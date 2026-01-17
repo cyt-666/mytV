@@ -13,6 +13,7 @@
             v-model="filterType"
             placeholder="类型筛选"
             :style="{ width: '120px' }"
+            @change="handleFilterChange"
           >
             <a-option value="">全部</a-option>
             <a-option value="movie">电影</a-option>
@@ -23,6 +24,7 @@
             v-model="sortBy"
             placeholder="排序方式"
             :style="{ width: '140px' }"
+            @change="handleSortChange"
           >
             <a-option value="collected_desc">最新入库</a-option>
             <a-option value="collected_asc">最早入库</a-option>
@@ -131,6 +133,14 @@ const saveCollectionState = () => {
     timestamp: Date.now()
   }
   saveState(state)
+}
+
+const handleFilterChange = () => {
+  saveCollectionState()
+}
+
+const handleSortChange = () => {
+  saveCollectionState()
 }
 
 const restoreCollectionState = () => {

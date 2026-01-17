@@ -103,12 +103,31 @@
           </a-tab-pane>
 
           <a-tab-pane key="recent" title="🆕 最新发布">
-            <MediaGrid
-              :items="recentItems"
-              :loading="loading.recent"
-              @load-more="loadMoreRecent"
-              media-type="auto"
-            />
+            <a-tabs
+              v-model:active-key="recentSubTab"
+              type="card"
+              size="small"
+              @change="handleRecentSubTabChange"
+              class="recent-sub-tabs"
+            >
+              <a-tab-pane key="movies" title="电影">
+                <MediaGrid
+                  :items="recentMovies"
+                  :loading="loading.recentMovies"
+                  :has-more="false"
+                  media-type="movie"
+                />
+              </a-tab-pane>
+
+              <a-tab-pane key="shows" title="电视剧">
+                <MediaGrid
+                  :items="recentShows"
+                  :loading="loading.recentShows"
+                  :has-more="false"
+                  media-type="show"
+                />
+              </a-tab-pane>
+            </a-tabs>
           </a-tab-pane>
         </a-tabs>
       </section>
@@ -123,7 +142,7 @@ import {
   IconStarFill, IconPlayArrow, IconPlusCircle
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse } from '../types/api'
+import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse, CalendarMovie, CalendarShow } from '../types/api'
 import { invoke } from "@tauri-apps/api/core";
 import { preloadMovieTranslations, getMovieChineseTranslation, type TranslationResult } from '../utils/translation'
 import { useHomePageState } from '../composables/usePageState'
@@ -142,6 +161,7 @@ defineOptions({
 // 响应式数据
 const activeTab = ref('trending')
 const trendingSubTab = ref('movies')
+const recentSubTab = ref('movies')
 const featuredMovies = ref<Movie[]>([])
 // 存储轮播图的翻译数据
 const featuredTranslations = ref<Record<number, TranslationResult>>({})
@@ -150,7 +170,8 @@ const trendingMovies = ref<Movie[]>([])
 const trendingShows = ref<Show[]>([])
 const recommendedMovies = ref<Movie[]>([])
 const recommendedShows = ref<Show[]>([])
-const recentItems = ref<(Movie | Show)[]>([])
+const recentMovies = ref<Movie[]>([])
+const recentShows = ref<Show[]>([])
 
 const loading = ref({
   featured: false,
@@ -158,7 +179,8 @@ const loading = ref({
   trendingShows: false,
   movies: false,
   shows: false,
-  recent: false
+  recentMovies: false,
+  recentShows: false
 })
 
 // 添加标志防止重复加载
@@ -167,7 +189,8 @@ const dataLoaded = ref({
   trendingShows: false,
   movies: false,
   shows: false,
-  recent: false
+  recentMovies: false,
+  recentShows: false
 })
 
 const trendingMoviesPage = ref(1)
@@ -200,9 +223,19 @@ const getHeroBackground = (item: Movie) => {
 }
 
 const viewDetails = (item: Movie | Show, type: 'movie' | 'show') => {
+  // 优先使用 trakt 数字ID，因为详情页API需要数字ID
+  const id = item.ids?.trakt
+  if (!id) return
+
+  // 将图片信息存储到sessionStorage供详情页使用 (与 MediaCard 保持一致)
+  if (item.images) {
+    const cacheKey = `media_images_${id}`
+    sessionStorage.setItem(cacheKey, JSON.stringify(item.images))
+  }
+
   router.push({
     name: `${type}-detail`,
-    params: { id: item.ids?.slug || item.ids?.trakt }
+    params: { id }
   })
 }
 
@@ -236,9 +269,7 @@ const loadTabData = async (tab: string) => {
       }
       break
     case 'recent':
-      if (!dataLoaded.value.recent) {
-        await loadRecentData()
-      }
+      await loadRecentData()
       break
   }
 }
@@ -310,18 +341,103 @@ const loadShowsData = async () => {
 }
 
 const loadRecentData = async () => {
-  if (loading.value.recent || dataLoaded.value.recent) return
+  await loadRecentSubTabData(recentSubTab.value)
+}
 
-  loading.value.recent = true
+const loadRecentMovies = async () => {
+  if (loading.value.recentMovies || dataLoaded.value.recentMovies) return
+
+  loading.value.recentMovies = true
   try {
-    // 调用API获取最新发布
-    console.log('加载最新发布')
-    recentItems.value = []
-    dataLoaded.value.recent = true
+    const today = new Date()
+    const startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    
+    const result = await invoke<CalendarMovie[]>("get_calendar_movies", {
+      startDate: startDateStr,
+      days: 30
+    })
+    
+    const movies: Movie[] = result.map(item => ({
+      ...item.movie,
+      released: item.released
+    }))
+    
+    movies.sort((a, b) => {
+      const dateA = a.released ? new Date(a.released).getTime() : 0
+      const dateB = b.released ? new Date(b.released).getTime() : 0
+      return dateB - dateA
+    })
+    
+    recentMovies.value = movies
+    dataLoaded.value.recentMovies = true
+    console.log('加载最新电影:', movies.length, '部')
   } catch (error) {
-    console.error('加载最新发布失败:', error)
+    console.error('加载最新电影失败:', error)
   } finally {
-    loading.value.recent = false
+    loading.value.recentMovies = false
+  }
+}
+
+const loadRecentShows = async () => {
+  if (loading.value.recentShows || dataLoaded.value.recentShows) return
+
+  loading.value.recentShows = true
+  try {
+    const today = new Date()
+    const startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    
+    const result = await invoke<CalendarShow[]>("get_calendar_premieres", {
+      startDate: startDateStr,
+      days: 30
+    })
+    
+    const showsMap = new Map<number, Show>()
+    for (const item of result) {
+      const traktId = item.show.ids?.trakt
+      if (traktId && !showsMap.has(traktId)) {
+        showsMap.set(traktId, {
+          ...item.show,
+          released: item.first_aired
+        })
+      }
+    }
+    
+    const shows = Array.from(showsMap.values())
+    shows.sort((a, b) => {
+      const dateA = a.released ? new Date(a.released).getTime() : 0
+      const dateB = b.released ? new Date(b.released).getTime() : 0
+      return dateB - dateA
+    })
+    
+    recentShows.value = shows
+    dataLoaded.value.recentShows = true
+    console.log('加载最新电视剧:', shows.length, '部')
+  } catch (error) {
+    console.error('加载最新电视剧失败:', error)
+  } finally {
+    loading.value.recentShows = false
+  }
+}
+
+const handleRecentSubTabChange = (key: string) => {
+  recentSubTab.value = key
+  loadRecentSubTabData(key)
+}
+
+const loadRecentSubTabData = async (subTab: string) => {
+  switch (subTab) {
+    case 'movies':
+      if (!dataLoaded.value.recentMovies) {
+        await loadRecentMovies()
+      }
+      break
+    case 'shows':
+      if (!dataLoaded.value.recentShows) {
+        await loadRecentShows()
+      }
+      break
   }
 }
 
@@ -365,16 +481,12 @@ const loadMoreTrendingShows = async () => {
         }
       }
     }
-    trendingShowsPage.value++
+  trendingShowsPage.value++
   } catch (error) {
     console.error('加载更多热门电视剧失败:', error)
   } finally {
     loading.value.trendingShows = false
   }
-}
-
-const loadMoreRecent = () => {
-  console.log('加载更多最新发布')
 }
 
 const handleTrendingSubTabChange = (key: string) => {
@@ -703,10 +815,21 @@ watch(() => route.query.type, (newType, oldType) => {
 }
 
 /* 子 Tab 样式 */
-.trending-sub-tabs {
+.trending-sub-tabs,
+.recent-sub-tabs {
   margin-top: 24px;
 }
-.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab) {
+
+/* 去除子 Tab 内容区域的可能边框 */
+.trending-sub-tabs :deep(.arco-tabs-content),
+.recent-sub-tabs :deep(.arco-tabs-content) {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
+}
+
+.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab),
+.recent-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab) {
   background-color: transparent;
   border: 1px solid #e5e6eb;
   border-radius: 20px;
@@ -717,11 +840,16 @@ watch(() => route.query.type, (newType, oldType) => {
   font-size: 14px;
   color: #4e5969;
 }
-.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab-active) {
+.trending-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab-active),
+.recent-sub-tabs :deep(.arco-tabs-nav-type-card .arco-tabs-tab-active) {
   background-color: #1d1d1f;
   color: #fff;
   border-color: #1d1d1f;
 }
+
+/* 去除 Tab 边框和阴影，解决列表两侧可能有线的问题 */
+:deep(.arco-tabs-nav::before) { display: none !important; }
+:deep(.arco-tabs-content) { border: none !important; }
 
 /* 响应式 */
 @media (max-width: 768px) {
