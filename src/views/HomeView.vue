@@ -456,6 +456,13 @@ const loadTrendingShowsData = async () => {
 
 // 生命周期
 onMounted(async () => {
+  try {
+    const res = await invoke<string>('debug_config')
+    alert(res)
+  } catch (e) {
+    console.error(e)
+  }
+
   // 尝试恢复状态
   const savedState = restoreHomeState()
   
