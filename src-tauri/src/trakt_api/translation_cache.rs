@@ -1,5 +1,6 @@
 use tauri::{command, AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
+use log::debug;
 use crate::model::translation::{TranslationData, TranslationCacheItem};
 use crate::model::movie::MovieTranslations;
 use crate::model::shows::{ShowTranslations, SeasonTranslations};
@@ -129,17 +130,17 @@ async fn get_cached_translation(app: &AppHandle, cache_key: &str) -> Option<Tran
             if let Some(value) = store.get(cache_key) {
                 if let Ok(cache_item) = serde_json::from_value::<TranslationCacheItem>(value) {
                     if !cache_item.is_expired() {
-                        println!("从缓存获取翻译: {}", cache_key);
+                        debug!("从缓存获取翻译: {}", cache_key);
                         return cache_item.data;
                     } else {
-                        println!("翻译缓存已过期: {}", cache_key);
+                        debug!("翻译缓存已过期: {}", cache_key);
                         let _ = store.delete(cache_key);
                         let _ = store.save();
                     }
                 }
             }
         }
-        Err(e) => println!("访问翻译缓存失败: {}", e)
+        Err(e) => debug!("访问翻译缓存失败: {}", e)
     }
     None
 }
@@ -150,7 +151,7 @@ async fn set_cached_translation(app: &AppHandle, cache_key: &str, data: Option<T
             let cache_item = TranslationCacheItem::new(data, CACHE_DURATION_MS);
             let _ = store.set(cache_key, serde_json::to_value(&cache_item).unwrap());
             let _ = store.save();
-            println!("翻译已缓存: {}", cache_key);
+            debug!("翻译已缓存: {}", cache_key);
             Ok(())
         }
         Err(e) => Err(format!("保存翻译缓存失败: {}", e))

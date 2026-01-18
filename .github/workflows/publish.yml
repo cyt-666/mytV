@@ -97,7 +97,23 @@ jobs:
         with:
           tagName: v${{ needs.check-version.outputs.version }}
           releaseName: "App v${{ needs.check-version.outputs.version }}"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: |
+            ## 下载安装
+
+            ### Windows
+            下载 `.msi` 或 `.exe` 文件直接安装。
+
+            ### macOS
+            下载 `.dmg` 文件，打开后将应用拖入 Applications 文件夹。
+
+            **首次运行提示"已损坏"？** 这是因为应用未签名。请在终端运行：
+            ```bash
+            xattr -cr /Applications/mytv.app
+            ```
+            然后重新打开应用即可。
+
+            ### Linux
+            下载 `.AppImage` 或 `.deb` 文件安装。
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

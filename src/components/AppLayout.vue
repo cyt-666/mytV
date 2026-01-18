@@ -59,7 +59,7 @@
     </a-layout-sider>
 
     <a-layout class="layout-main">
-      <a-layout-header class="app-header">
+      <a-layout-header class="app-header" @mousedown="handleHeaderDrag">
         <div class="header-left">
           <a-button 
             v-if="showGlobalBackButton"
@@ -309,6 +309,18 @@ const maximizeWindow = async () => {
   isMaximized.value = await appWindow.isMaximized()
 }
 const closeWindow = () => appWindow.close()
+
+// macOS 窗口拖拽：使用 startDragging API 解决 Overlay 模式下无法拖拽的问题
+const handleHeaderDrag = async (e: MouseEvent) => {
+  // 检查点击目标是否是交互元素（按钮、输入框等）
+  const target = e.target as HTMLElement
+  const isInteractive = target.closest('button, input, a, .arco-input-wrapper, .user-btn, .control-btn, .window-controls')
+  
+  // 只有在非交互元素上且是左键点击时才触发拖拽
+  if (!isInteractive && e.buttons === 1 && isMacOS.value) {
+    await appWindow.startDragging()
+  }
+}
 
 const updateMaximizeState = async () => {
   isMaximized.value = await appWindow.isMaximized()
@@ -633,7 +645,8 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3); /* 关闭按钮增加阴影 */
 }
 
-.header-left, .header-center { -webkit-app-region: no-drag; }
+.header-left { -webkit-app-region: no-drag; }
+.search-input { -webkit-app-region: no-drag; }
 
 /* 搜索框 - 胶囊 */
 .search-input { width: 320px; transition: width 0.3s; }
