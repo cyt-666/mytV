@@ -20,10 +20,12 @@ use super::{ApiClient, API, TRAKT_API_HOST, TRAKT_HOST};
 pub async fn start_trakt_user_auth(app: AppHandle) -> Result<(), u16> {
     info!("Starting Trakt User Auth");
     let token_state = app.try_state::<Mutex<Token>>();
-    if token_state.is_some() {
-        let token = token_state.unwrap();
-        info!("Token exists: {:?}", token);
-        return Err(200);
+    if let Some(token_state) = token_state {
+        let token = token_state.lock().await;
+        if !token.access_token.is_empty() {
+            info!("Token exists and is valid: {:?}", token);
+            return Err(200);
+        }
     }
     let mut url = Url::parse(format!("{}{}", TRAKT_HOST, API.auth.authorize.uri).as_str()).unwrap();
     url.query_pairs_mut()
@@ -260,7 +262,7 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
         
         // 从应用状态中移除token
         drop(token); // 释放锁
-        app.state::<Mutex<Token>>().try_lock().map(|mut t| {
+        let _ = app.state::<Mutex<Token>>().try_lock().map(|mut t| {
             *t = Token {
                 access_token: String::new(),
                 token_type: String::new(),
@@ -270,6 +272,13 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
                 created_at: 0,
             };
         });
+        
+        // 重置 ApiClient 的认证状态
+        if let Some(client_state) = app.try_state::<Mutex<ApiClient>>() {
+            if let Ok(mut client) = client_state.try_lock() {
+                client.refresh_client(None);
+            }
+        }
         
         match result {
             Ok(response) => {
