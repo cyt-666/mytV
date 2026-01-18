@@ -95,6 +95,7 @@ export interface Show extends BaseMedia {
   aired_episodes?: number;
   total_episodes?: number;
   seasons?: number;
+  latestSeason?: number;
 }
 
 export interface ShowTrending {
@@ -331,6 +332,27 @@ export interface CalendarShow {
   first_aired?: string;
   episode?: Episode;
   show: Show;
+}
+
+export interface ShowProgress {
+  aired: number;
+  completed: number;
+  last_watched_at?: string;
+  reset_at?: string;
+  next_episode?: Episode;
+  last_episode?: Episode;
+}
+
+export interface ShowProgressSummary {
+  aired: number;
+  completed: number;
+  last_watched_at?: string;
+}
+
+export interface UpNextItem {
+  show: Show;
+  next_episode: Episode;
+  progress: ShowProgressSummary;
 }
 
 // 电影推荐返回类型（保持向后兼容）

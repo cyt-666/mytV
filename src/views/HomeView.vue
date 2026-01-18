@@ -388,19 +388,47 @@ const loadRecentShows = async () => {
     const startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
     const startDateStr = startDate.toISOString().split('T')[0]
     
-    const result = await invoke<CalendarShow[]>("get_calendar_premieres", {
-      startDate: startDateStr,
-      days: 30
-    })
+    const [newShowsResult, premieresResult] = await Promise.all([
+      invoke<CalendarShow[]>("get_calendar_new_shows", {
+        startDate: startDateStr,
+        days: 30
+      }),
+      invoke<CalendarShow[]>("get_calendar_premieres", {
+        startDate: startDateStr,
+        days: 30
+      })
+    ])
     
     const showsMap = new Map<number, Show>()
-    for (const item of result) {
+    
+    for (const item of newShowsResult) {
       const traktId = item.show.ids?.trakt
       if (traktId && !showsMap.has(traktId)) {
         showsMap.set(traktId, {
           ...item.show,
-          released: item.first_aired
+          released: item.first_aired,
+          latestSeason: 1
         })
+      }
+    }
+    
+    for (const item of premieresResult) {
+      const traktId = item.show.ids?.trakt
+      const seasonNum = item.episode?.season
+      if (traktId && seasonNum) {
+        if (!showsMap.has(traktId)) {
+          showsMap.set(traktId, {
+            ...item.show,
+            released: item.first_aired,
+            latestSeason: seasonNum
+          })
+        } else {
+          const existing = showsMap.get(traktId)!
+          if (seasonNum > (existing.latestSeason || 1)) {
+            existing.latestSeason = seasonNum
+            existing.released = item.first_aired
+          }
+        }
       }
     }
     

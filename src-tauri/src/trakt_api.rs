@@ -8,6 +8,7 @@ pub mod sync;
 pub mod translation_cache;
 pub mod calendars;
 pub mod utils;
+pub mod progress;
 
 use auth::refresh_token;
 use tauri::{AppHandle, Manager};
@@ -101,6 +102,7 @@ pub struct ShowApi {
     pub season_trans: Entry,
     pub season_episodes: Entry,
     pub episode_details: Entry,
+    pub progress: Entry,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -116,6 +118,7 @@ pub struct SyncApi {
 pub struct CalendarsApi {
     pub movies: Entry,
     pub shows: Entry,
+    pub my_shows: Entry,
     pub new_shows: Entry,
     pub season_premieres: Entry,
     pub dvd: Entry,

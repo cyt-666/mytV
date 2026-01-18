@@ -42,7 +42,7 @@
           <div class="translation-dot"></div>
         </span>
       </h3>
-      <p class="media-year" v-if="year">{{ year }}</p>
+      <p class="media-year" v-if="displayYear">{{ displayYear }}</p>
       <div class="media-meta" v-if="showMeta">
         <span v-if="genres?.length" class="genre-tag">
           {{ genres[0] }}
@@ -92,10 +92,19 @@ const title = computed(() => {
   return translation.value?.title || props.media.title
 })
 
-const year = computed(() => props.media.year)
 const rating = computed(() => props.media.rating)
 const genres = computed(() => props.media.genres)
 const runtime = computed(() => props.media.runtime)
+
+const displayYear = computed(() => {
+  if (props.type === 'show') {
+    const show = props.media as Show
+    if (show.latestSeason && show.latestSeason > 1) {
+      return `第${show.latestSeason}季`
+    }
+  }
+  return props.media.year
+})
 
 const posterUrl = computed(() => {
   const images = props.media.images

@@ -40,6 +40,8 @@
         <a-sub-menu key="my-library">
           <template #icon><icon-bookmark /></template>
           <template #title>我的</template>
+          <a-menu-item key="up-next">待看</a-menu-item>
+          <a-menu-item key="calendar">剧集日历</a-menu-item>
           <a-menu-item key="watchlist">观看清单</a-menu-item>
           <a-menu-item key="collection">我的片库</a-menu-item>
           <a-menu-item key="history">观看历史</a-menu-item>
@@ -204,6 +206,8 @@ const selectedKeys = computed(() => {
     return ['home']
   }
   if (path === '/search') return ['search']
+  if (path === '/up-next') return ['up-next']
+  if (path === '/calendar') return ['calendar']
   if (path === '/watchlist') return ['watchlist']
   if (path === '/collection') return ['collection']
   if (path === '/history') return ['history']
@@ -278,6 +282,8 @@ const handleMenuClick = (key: string) => {
   switch (key) {
     case 'home': router.push('/'); break;
     case 'search': router.push('/search'); break;
+    case 'up-next': router.push('/up-next'); break;
+    case 'calendar': router.push('/calendar'); break;
     case 'watchlist': router.push('/watchlist'); break;
     case 'collection': router.push('/collection'); break;
     case 'history': router.push('/history'); break;

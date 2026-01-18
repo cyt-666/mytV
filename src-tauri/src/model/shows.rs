@@ -134,3 +134,27 @@ pub struct EpisodeIds {
     pub imdb: Option<String>,
     pub tmdb: Option<u32>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowProgress {
+    pub aired: u32,
+    pub completed: u32,
+    pub last_watched_at: Option<String>,
+    pub reset_at: Option<String>,
+    pub next_episode: Option<Episode>,
+    pub last_episode: Option<Episode>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UpNextItem {
+    pub show: Show,
+    pub next_episode: Episode,
+    pub progress: ShowProgressSummary,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowProgressSummary {
+    pub aired: u32,
+    pub completed: u32,
+    pub last_watched_at: Option<String>,
+}

@@ -90,3 +90,21 @@ pub async fn get_calendar_premieres(app: AppHandle, start_date: String, days: u3
         Err(result.unwrap_err())
     }
 }
+
+#[command]
+pub async fn get_my_calendar_shows(app: AppHandle, start_date: String, days: u32) -> Result<Vec<CalendarShow>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    
+    let mut uri = API.calendars.my_shows.uri.clone();
+    uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
+    
+    let result = client.req_api(&app, API.calendars.my_shows.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    
+    if let Ok(result) = result {
+        let shows = serde_json::from_value::<Vec<CalendarShow>>(result).unwrap_or_default();
+        Ok(shows)
+    } else {
+        Err(result.unwrap_err())
+    }
+}

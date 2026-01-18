@@ -197,6 +197,13 @@
             "params":{
                 "extended":"full"
             }
+        },
+        "progress":{
+            "uri":"/shows/id/progress/watched",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
         }
     },
     "calendars":{
@@ -212,6 +219,13 @@
             "method":"GET",
             "params":{
                 "extended":"full"
+            }
+        },
+        "my_shows":{
+            "uri":"/calendars/my/shows/start_date/days",
+            "method":"GET",
+            "params":{
+                "extended":"full,images"
             }
         },
         "new_shows":{

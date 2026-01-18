@@ -59,6 +59,9 @@ pub fn run() {
             trakt_api::calendars::get_calendar_shows,
             trakt_api::calendars::get_calendar_new_shows,
             trakt_api::calendars::get_calendar_premieres,
+            trakt_api::calendars::get_my_calendar_shows,
+            trakt_api::progress::get_show_progress,
+            trakt_api::progress::get_up_next,
             trakt_api::utils::get_proxied_image
         ])
         .setup(|app|{

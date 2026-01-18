@@ -15,17 +15,25 @@ pub struct SyncResponse {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SyncStats {
+    #[serde(default)]
     pub movies: u32,
+    #[serde(default)]
     pub shows: u32,
+    #[serde(default)]
     pub seasons: u32,
+    #[serde(default)]
     pub episodes: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NotFound {
+    #[serde(default)]
     pub movies: Vec<NotFoundItem>,
+    #[serde(default)]
     pub shows: Vec<NotFoundItem>,
+    #[serde(default)]
     pub seasons: Vec<NotFoundItem>,
+    #[serde(default)]
     pub episodes: Vec<NotFoundItem>,
 }
 

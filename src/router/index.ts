@@ -61,6 +61,18 @@ const routes: RouteRecordRaw[] = [
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),
     meta: { title: '个人中心' }
+  },
+  {
+    path: '/up-next',
+    name: 'up-next',
+    component: () => import('../views/UpNextView.vue'),
+    meta: { title: '待看' }
+  },
+  {
+    path: '/calendar',
+    name: 'calendar',
+    component: () => import('../views/CalendarView.vue'),
+    meta: { title: '剧集日历' }
   }
 ]
 
