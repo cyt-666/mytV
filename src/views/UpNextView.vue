@@ -36,15 +36,18 @@
                 <div v-else class="poster-placeholder">
                   <icon-image :size="40" />
                 </div>
-                <div class="progress-overlay">
-                  <a-progress
-                    :percent="(item.progress.completed / item.progress.aired) * 100"
-                    :show-text="false"
-                    status="success"
-                    :stroke-width="4"
-                    class="card-progress"
-                  />
-                </div>
+                  <div class="progress-overlay">
+                    <a-progress
+                      :percent="item.progress.completed / item.progress.aired"
+                      :show-text="false"
+                      :color="{
+                        '0%': '#165dff',
+                        '100%': '#165dff'
+                      }"
+                      :stroke-width="4"
+                      class="card-progress"
+                    />
+                  </div>
               </div>
             </template>
             <div class="card-content">
