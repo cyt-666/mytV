@@ -27,7 +27,7 @@
           </div>
         </div>
         
-        <a-button type="primary">
+        <a-button type="primary" @click="$router.push('/settings')">
           <icon-settings />
           设置
         </a-button>

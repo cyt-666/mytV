@@ -37,11 +37,17 @@
           <a-menu-item key="trending">热门</a-menu-item>
         </a-sub-menu>
         
+        <a-sub-menu key="tracking">
+          <template #icon><icon-play-circle /></template>
+          <template #title>追剧</template>
+          <a-menu-item key="up-next">待看</a-menu-item>
+          <a-menu-item key="calendar">剧集日历</a-menu-item>
+        </a-sub-menu>
+        
         <a-sub-menu key="my-library">
           <template #icon><icon-bookmark /></template>
           <template #title>我的</template>
-          <a-menu-item key="up-next">待看</a-menu-item>
-          <a-menu-item key="calendar">剧集日历</a-menu-item>
+          <a-menu-item key="profile">个人中心</a-menu-item>
           <a-menu-item key="watchlist">观看清单</a-menu-item>
           <a-menu-item key="collection">我的片库</a-menu-item>
           <a-menu-item key="history">观看历史</a-menu-item>
@@ -69,7 +75,7 @@
             class="global-back-button"
             @click="handleGlobalBack"
           >
-            <icon-arrow-left :size="32" />
+            <icon-arrow-left :size="26" />
           </a-button>
         </div>
         
@@ -135,7 +141,7 @@
         </div>
       </a-layout-header>
 
-      <a-layout-content class="app-content">
+      <a-layout-content class="app-content" ref="contentRef">
         <router-view v-slot="{ Component, route }">
           <keep-alive v-if="shouldKeepAlive(route)">
             <component :is="Component" :key="route.path" />
@@ -148,14 +154,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, provide, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, provide, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue' // Add this import
 import { 
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
   IconHome, IconStar, IconBookmark, IconArrowLeft,
   IconMenuFold, IconMenuUnfold,
-  IconMinus, IconFullscreen, IconFullscreenExit, IconClose
+  IconMinus, IconFullscreen, IconFullscreenExit, IconClose,
+  IconPlayCircle
 } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
@@ -165,6 +172,7 @@ import type { User } from '../types/api'
 const router = useRouter()
 const route = useRoute()
 const appWindow = getCurrentWindow()
+const contentRef = ref()
 
 // 状态管理
 const searchQuery = ref('')
@@ -211,6 +219,7 @@ const selectedKeys = computed(() => {
   if (path === '/watchlist') return ['watchlist']
   if (path === '/collection') return ['collection']
   if (path === '/history') return ['history']
+  if (path === '/profile' || path === '/settings') return ['profile']
   if (path.startsWith('/movie') || path.startsWith('/show')) {
     return ['home']
   }
@@ -287,6 +296,7 @@ const handleMenuClick = (key: string) => {
     case 'watchlist': router.push('/watchlist'); break;
     case 'collection': router.push('/collection'); break;
     case 'history': router.push('/history'); break;
+    case 'profile': router.push('/profile'); break;
     case 'movies': router.push('/?type=movies'); break;
     case 'shows': router.push('/?type=shows'); break;
     case 'trending': router.push('/?type=trending'); break;
@@ -332,8 +342,14 @@ const updateMaximizeState = async () => {
   isMaximized.value = await appWindow.isMaximized()
 }
 
-watch(route, (newRoute) => {
+watch(route, async (newRoute) => {
   showGlobalBackButton.value = newRoute.path !== '/' && newRoute.path !== '/search'
+  
+  // 路由切换时滚动到顶部
+  await nextTick()
+  if (contentRef.value?.$el) {
+    contentRef.value.$el.scrollTo({ top: 0 })
+  }
 }, { immediate: true })
 
 const shouldKeepAlive = (route: any) => {
@@ -651,7 +667,12 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3); /* 关闭按钮增加阴影 */
 }
 
-.header-left { -webkit-app-region: no-drag; }
+.header-left { 
+  display: flex;
+  align-items: center;
+  min-width: 40px;
+  -webkit-app-region: no-drag; 
+}
 .search-input { -webkit-app-region: no-drag; }
 
 /* 搜索框 - 胶囊 */
@@ -683,11 +704,12 @@ onBeforeUnmount(() => {
 .user-btn:hover { background-color: #f7f8fa; }
 
 .global-back-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 22px; /* 圆形 */
-  color: #1d1d1f; /* 深色增强对比 */
-  background: transparent; /* 默认无背景 */
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  color: #1d1d1f;
+  background: transparent;
   transition: all 0.2s;
   display: flex;
   align-items: center;

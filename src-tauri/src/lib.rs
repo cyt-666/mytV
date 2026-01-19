@@ -2,6 +2,7 @@ mod app_conf;
 mod token;
 mod trakt_api;
 mod model;
+mod settings;
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 use token::Token;
@@ -11,8 +12,20 @@ use trakt_api::ApiClient;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let log_level = match app_conf::get_config().log_level.as_str() {
+        "error" => log::LevelFilter::Error,
+        "warn" => log::LevelFilter::Warn,
+        "info" => log::LevelFilter::Info,
+        "debug" => log::LevelFilter::Debug,
+        "trace" => log::LevelFilter::Trace,
+        _ => log::LevelFilter::Info,
+    };
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(tauri_plugin_log::Builder::new()
+            .level(log_level)
+            .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+            .build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_oauth::init())
         .plugin(tauri_plugin_opener::init())
@@ -62,7 +75,9 @@ pub fn run() {
             trakt_api::calendars::get_my_calendar_shows,
             trakt_api::progress::get_show_progress,
             trakt_api::progress::get_up_next,
-            trakt_api::utils::get_proxied_image
+            trakt_api::utils::get_proxied_image,
+            settings::get_app_config,
+            settings::update_log_level
         ])
         .setup(|app|{
             let store = app.store("app_data.json");

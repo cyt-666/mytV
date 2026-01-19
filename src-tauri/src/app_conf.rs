@@ -1,15 +1,21 @@
 use lazy_static::lazy_static;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppConf {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
     pub oauth_port: u16,
+    #[serde(default = "default_log_level")]
+    pub log_level: String,
+}
+
+fn default_log_level() -> String {
+    "info".to_string()
 }
 
 impl AppConf {
@@ -26,6 +32,7 @@ impl AppConf {
                     client_secret: secret.to_string(),
                     redirect_uri: uri.to_string(),
                     oauth_port: oauth_port.and_then(|p| p.parse().ok()).unwrap_or(4396),
+                    log_level: default_log_level(),
                 };
             }
         }

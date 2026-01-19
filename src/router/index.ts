@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '个人中心' }
   },
   {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: { title: '设置' }
+  },
+  {
     path: '/up-next',
     name: 'up-next',
     component: () => import('../views/UpNextView.vue'),
