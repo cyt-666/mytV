@@ -149,8 +149,9 @@ import {
   IconSearch, IconClose, IconRefresh
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show } from '../types/api'
+import type { Movie, Show, MovieTrending, ShowTrending } from '../types/api'
 import { usePageState } from '../composables/usePageState'
+import { getMovieChineseTranslation, getShowChineseTranslation } from '../utils/translation'
 
 interface SearchResultItem {
   type: string
@@ -183,10 +184,7 @@ const filters = ref({
   genre: ''
 })
 
-const trendingSearches = ref([
-  '阿凡达', '流浪地球', '复仇者联盟', '权力的游戏', '老友记',
-  '肖申克的救赎', '盗梦空间', '星际穿越', '泰坦尼克号', '黑镜'
-])
+const trendingSearches = ref<string[]>([])
 
 // 选项数据
 const yearOptions = computed(() => {
@@ -359,13 +357,101 @@ const getEmptyMessage = () => {
 const loadDiscoverData = async () => {
   loadingDiscover.value = true
   try {
-    // 加载推荐发现内容
-    console.log('加载推荐发现内容')
-    discoverItems.value = []
+    // 并行获取热门电影和电视剧
+    const [trendingMovies, trendingShows] = await Promise.all([
+      invoke<MovieTrending[]>('movie_trending_page', { page: 1, limit: 10 }),
+      invoke<ShowTrending[]>('show_trending_page', { page: 1, limit: 10 })
+    ])
+
+    const items: (Movie | Show)[] = []
+    
+    if (trendingMovies) {
+      trendingMovies.forEach(item => {
+        if (item.movie) {
+          item.movie.media_type = 'movie'
+          items.push(item.movie)
+        }
+      })
+    }
+    
+    if (trendingShows) {
+      trendingShows.forEach(item => {
+        if (item.show) {
+          item.show.media_type = 'show'
+          items.push(item.show)
+        }
+      })
+    }
+    
+    // 随机打乱顺序
+    discoverItems.value = items.sort(() => Math.random() - 0.5)
+    
+    // 加载热门搜索标签（使用第2页数据，避免重复）
+    loadTrendingTags()
   } catch (error) {
     console.error('加载推荐内容失败:', error)
   } finally {
     loadingDiscover.value = false
+  }
+}
+
+const loadTrendingTags = async () => {
+  try {
+    const [movies, shows] = await Promise.all([
+      invoke<MovieTrending[]>('movie_trending_page', { page: 2, limit: 10 }),
+      invoke<ShowTrending[]>('show_trending_page', { page: 2, limit: 10 })
+    ])
+    
+    const tags: string[] = []
+    const fetchPromises: Promise<void>[] = []
+    
+    // 处理电影
+    if (movies) {
+      movies.slice(0, 8).forEach(item => {
+        if (item.movie?.title) {
+          const promise = (async () => {
+            let title = item.movie!.title
+            // 尝试获取中文标题
+            if (item.movie!.ids?.trakt) {
+              try {
+                const trans = await getMovieChineseTranslation(item.movie!.ids.trakt)
+                if (trans?.title) title = trans.title
+              } catch (e) { /* ignore */ }
+            }
+            tags.push(title)
+          })()
+          fetchPromises.push(promise)
+        }
+      })
+    }
+    
+    // 处理电视剧
+    if (shows) {
+      shows.slice(0, 8).forEach(item => {
+        if (item.show?.title) {
+          const promise = (async () => {
+            let title = item.show!.title
+            if (item.show!.ids?.trakt) {
+              try {
+                const trans = await getShowChineseTranslation(item.show!.ids.trakt)
+                if (trans?.title) title = trans.title
+              } catch (e) { /* ignore */ }
+            }
+            tags.push(title)
+          })()
+          fetchPromises.push(promise)
+        }
+      })
+    }
+    
+    await Promise.all(fetchPromises)
+    // 打乱标签顺序并取前12个
+    trendingSearches.value = tags.sort(() => Math.random() - 0.5).slice(0, 12)
+    
+  } catch (error) {
+    console.error('加载热门搜索标签失败:', error)
+    // 失败时使用默认标签
+    trendingSearches.value = ['阿凡达', '复仇者联盟', '权力的游戏', '黑镜', '星际穿越']
   }
 }
 

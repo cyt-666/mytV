@@ -71,6 +71,19 @@ pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result
 }
 
 #[command]
+pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Show>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client.req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true).await;
+    if let Ok(result) = result {
+        let shows = serde_json::from_value::<Vec<Show>>(result).unwrap();
+        Ok(shows)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
 pub async fn show_details(app: AppHandle, id: u32) -> Result<ShowDetails, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;

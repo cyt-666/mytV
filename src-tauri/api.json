@@ -141,6 +141,13 @@
             "method":"GET",
             "params":{}
         },
+        "popular":{
+            "uri":"/movies/popular",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
+        },
         "details":{
             "uri":"/movies/id",
             "method":"GET",
@@ -159,6 +166,13 @@
             "uri":"/shows/trending",
             "method":"GET",
             "params":{}
+        },
+        "popular":{
+            "uri":"/shows/popular",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
         },
         "details":{
             "uri":"/shows/id",

@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { IconArrowLeft, IconBug } from '@arco-design/web-vue/es/icon'
+import { IconBug } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 

@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   IconStarFill, IconPlayArrow, IconPlusCircle
@@ -149,6 +149,7 @@ import { useHomePageState } from '../composables/usePageState'
 
 const router = useRouter()
 const route = useRoute()
+const isLoggedIn = inject('isLoggedIn', ref(false))
 
 // 使用状态管理
 const { saveHomeState, restoreHomeState } = useHomePageState()
@@ -309,11 +310,27 @@ const loadMoviesData = async () => {
 
   loading.value.movies = true
   try {
-    // 调用API获取推荐电影
-    const movies = await invoke<MoviesRecommendResponse>("movies_recommand")
+    let movies: Movie[] = []
+    
+    if (isLoggedIn.value) {
+      try {
+        // 已登录：获取个性化推荐
+        movies = await invoke<MoviesRecommendResponse>("movies_recommand")
+      } catch (e) {
+        console.warn('个性化推荐获取失败，降级为热门推荐', e)
+        // 失败降级为 Popular
+        const res = await invoke<Movie[]>("movie_popular_page", { page: 1, limit: 40 })
+        movies = res
+      }
+    } else {
+      // 未登录：获取 Popular 推荐 (经典高分)
+      const res = await invoke<Movie[]>("movie_popular_page", { page: 1, limit: 40 })
+      movies = res
+    }
+
     recommendedMovies.value = movies
     dataLoaded.value.movies = true
-    console.log('加载推荐电影')
+    console.log('加载推荐电影:', movies.length)
 
     // 在后台预加载翻译
     preloadMovieTranslations(movies, (loaded, total) => {
@@ -331,7 +348,22 @@ const loadShowsData = async () => {
 
   loading.value.shows = true
   try {
-    recommendedShows.value = await invoke<ShowsRecommendResponse>("shows_recommand")
+    let shows: Show[] = []
+
+    if (isLoggedIn.value) {
+      try {
+        shows = await invoke<ShowsRecommendResponse>("shows_recommand")
+      } catch (e) {
+        console.warn('个性化剧集推荐获取失败，降级为热门推荐', e)
+        const res = await invoke<Show[]>("show_popular_page", { page: 1, limit: 40 })
+        shows = res
+      }
+    } else {
+      const res = await invoke<Show[]>("show_popular_page", { page: 1, limit: 40 })
+      shows = res
+    }
+
+    recommendedShows.value = shows
     dataLoaded.value.shows = true
   } catch (error) {
     console.error('加载推荐剧集失败:', error)

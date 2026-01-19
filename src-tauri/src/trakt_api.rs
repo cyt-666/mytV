@@ -89,6 +89,7 @@ pub struct UserApi {
 #[derive(Debug, Deserialize, Clone)]
 pub struct MovieApi {
     pub trending: Entry,
+    pub popular: Entry,
     pub details: Entry,
     pub trans: Entry,
 }
@@ -96,6 +97,7 @@ pub struct MovieApi {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ShowApi {
     pub trending: Entry,
+    pub popular: Entry,
     pub details: Entry,
     pub trans: Entry,
     pub seasons: Entry,
