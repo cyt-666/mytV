@@ -7,6 +7,12 @@ pub struct MovieTrending {
     pub movie: Movie,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MovieAnticipated {
+    pub list_count: u32,
+    pub movie: Movie,
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Movie {

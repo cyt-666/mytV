@@ -148,6 +148,13 @@
                 "extended":"full"
             }
         },
+        "anticipated":{
+            "uri":"/movies/anticipated",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
+        },
         "details":{
             "uri":"/movies/id",
             "method":"GET",
@@ -169,6 +176,13 @@
         },
         "popular":{
             "uri":"/shows/popular",
+            "method":"GET",
+            "params":{
+                "extended":"full"
+            }
+        },
+        "anticipated":{
+            "uri":"/shows/anticipated",
             "method":"GET",
             "params":{
                 "extended":"full"

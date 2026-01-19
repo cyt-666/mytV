@@ -16,53 +16,59 @@
         <a-empty description="还没有正在观看的剧集" />
       </div>
 
-      <!-- 内容网格 -->
-      <div v-else class="up-next-grid">
+      <!-- 内容列表 -->
+      <div v-else class="up-next-list">
         <div 
           v-for="item in upNextItems" 
           :key="item.show.ids?.trakt ?? 0" 
-          class="up-next-card-wrapper"
+          class="up-next-item"
           @click="navigateToEpisode(item)"
         >
-          <a-card class="up-next-card" :bordered="false" hoverable>
-            <template #cover>
-              <div class="poster-wrapper">
-                <img
-                  v-if="item.show.images?.poster?.[0]"
-                  :src="`https://${item.show.images.poster[0]}`"
-                  :alt="item.show.title"
-                  class="poster-img"
-                />
-                <div v-else class="poster-placeholder">
-                  <icon-image :size="40" />
-                </div>
-                  <div class="progress-overlay">
-                    <a-progress
-                      :percent="item.progress.completed / item.progress.aired"
-                      :show-text="false"
-                      :color="{
-                        '0%': '#165dff',
-                        '100%': '#165dff'
-                      }"
-                      :stroke-width="4"
-                      class="card-progress"
-                    />
-                  </div>
-              </div>
-            </template>
-            <div class="card-content">
-              <div class="show-title">{{ getShowTitle(item) }}</div>
-              <div class="episode-info">
-                S{{ item.next_episode.season }}E{{ item.next_episode.number }} - {{ item.next_episode.title }}
-              </div>
-              <div class="meta-info">
-                <span class="progress-text">已看 {{ item.progress.completed }}/{{ item.progress.aired }}</span>
-                <span class="last-watched" v-if="item.progress.last_watched_at">
-                  {{ formatRelativeTime(item.progress.last_watched_at) }}
-                </span>
-              </div>
+          <!-- 海报 -->
+          <div class="item-poster">
+            <img
+              v-if="item.show.images?.poster?.[0]"
+              :src="`https://${item.show.images.poster[0]}`"
+              :alt="item.show.title"
+              class="poster-img"
+            />
+            <div v-else class="poster-placeholder">
+              <icon-image :size="32" />
             </div>
-          </a-card>
+          </div>
+
+          <!-- 内容信息 -->
+          <div class="item-content">
+            <div class="item-header">
+              <h3 class="show-title">{{ getShowTitle(item) }}</h3>
+              <span class="last-watched" v-if="item.progress.last_watched_at">
+                {{ formatRelativeTime(item.progress.last_watched_at) }}
+              </span>
+            </div>
+            
+            <div class="episode-info">
+              <span class="season-ep">S{{ item.next_episode.season }}E{{ item.next_episode.number }}</span>
+              <span class="episode-title">{{ item.next_episode.title }}</span>
+            </div>
+
+            <!-- 进度条区域 -->
+            <div class="progress-section">
+              <div class="progress-info">
+                <span>总进度 {{ Math.round((item.progress.completed / item.progress.aired) * 100) }}%</span>
+                <span class="progress-text">{{ item.progress.completed }} / {{ item.progress.aired }} 集</span>
+              </div>
+              <a-progress
+                :percent="item.progress.completed / item.progress.aired"
+                :show-text="false"
+                :color="{
+                  '0%': '#165dff',
+                  '100%': '#722ed1'
+                }"
+                :stroke-width="8"
+                class="list-progress"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -193,32 +199,38 @@ onMounted(() => {
   padding: 100px 0;
 }
 
-.up-next-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
+.up-next-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 800px; /* 限制列表最大宽度，优化阅读体验 */
+  margin: 0 auto;
 }
 
-.up-next-card {
-  border-radius: 12px;
-  overflow: hidden;
+.up-next-item {
+  display: flex;
   background: #ffffff;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  height: 100%;
+  border-radius: 12px;
+  padding: 16px;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0,0,0,0.02);
 }
 
-.up-next-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+.up-next-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-.poster-wrapper {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 2/3;
+.item-poster {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
   overflow: hidden;
-  background: #f2f2f7;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .poster-img {
@@ -230,87 +242,110 @@ onMounted(() => {
 .poster-placeholder {
   width: 100%;
   height: 100%;
+  background: #f2f3f5;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c7c7cc;
+  color: #c9ccd4;
 }
 
-.progress-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0;
-  background: rgba(0, 0, 0, 0.3);
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0; /* 防止文本溢出 */
 }
 
-.card-progress {
-  display: block;
-}
-
-.card-content {
-  padding: 16px;
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
 }
 
 .show-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #1d1d1f;
-  margin-bottom: 4px;
+  margin: 0;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.episode-info {
-  font-size: 13px;
-  color: #165dff;
-  font-weight: 500;
-  margin-bottom: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.meta-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #8e8e93;
-}
-
-.progress-text {
-  background: #f2f2f7;
-  padding: 2px 6px;
-  border-radius: 4px;
+  margin-right: 12px;
 }
 
 .last-watched {
-  font-style: italic;
+  font-size: 12px;
+  color: #86909c;
+  white-space: nowrap;
+  padding-top: 4px;
 }
 
-@media (max-width: 768px) {
-  .up-next-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
-  
-  .card-content {
+.episode-info {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #4e5969;
+  display: flex;
+  align-items: center;
+}
+
+.season-ep {
+  font-weight: 600;
+  color: #165dff;
+  margin-right: 8px;
+  background: rgba(22, 93, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.episode-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-section {
+  margin-top: auto;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #86909c;
+  margin-bottom: 6px;
+}
+
+.progress-text {
+  font-weight: 500;
+}
+
+.list-progress :deep(.arco-progress-line-bar) {
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .up-next-item {
     padding: 12px;
+    gap: 12px;
+  }
+  
+  .item-poster {
+    width: 60px;
+    height: 90px;
   }
   
   .show-title {
-    font-size: 14px;
+    font-size: 16px;
   }
   
   .episode-info {
-    font-size: 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
   }
 }
+
 </style>

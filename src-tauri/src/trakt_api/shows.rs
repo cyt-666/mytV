@@ -1,7 +1,7 @@
 use crate::trakt_api::ApiClient;
 use tauri::{command, AppHandle, Manager};
 use crate::trakt_api::API;
-use crate::model::shows::{ShowTrending, Show, ShowDetails, ShowTranslations, Seasons, SeasonTranslations, Episode};
+use crate::model::shows::{ShowTrending, ShowAnticipated, Show, ShowDetails, ShowTranslations, Seasons, SeasonTranslations, Episode};
 use tokio::sync::Mutex;
 
 #[command]
@@ -77,6 +77,19 @@ pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<
     let result = client.req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true).await;
     if let Ok(result) = result {
         let shows = serde_json::from_value::<Vec<Show>>(result).unwrap();
+        Ok(shows)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowAnticipated>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client.req_api(&app, API.shows.anticipated.method.as_str(), API.shows.anticipated.uri.clone(), None, None, Some(limit), Some(page), true).await;
+    if let Ok(result) = result {
+        let shows = serde_json::from_value::<Vec<ShowAnticipated>>(result).unwrap();
         Ok(shows)
     } else {
         Err(result.unwrap_err())

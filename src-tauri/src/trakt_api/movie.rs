@@ -1,7 +1,7 @@
 use crate::trakt_api::ApiClient;
 use tauri::{command, AppHandle, Manager};
 use crate::trakt_api::API;
-use crate::model::movie::{MovieTrending, MovieDetails, MovieTranslations, Movie};
+use crate::model::movie::{MovieTrending, MovieAnticipated, MovieDetails, MovieTranslations, Movie};
 use tokio::sync::Mutex;
 
 
@@ -41,6 +41,19 @@ pub async fn movie_popular_page(app: AppHandle, page: u32, limit: u32) -> Result
     let result = client.req_api(&app, API.movie.popular.method.as_str(), API.movie.popular.uri.clone(), None, None, Some(limit), Some(page), true).await;
     if let Ok(result) = result {
         let movies = serde_json::from_value::<Vec<Movie>>(result).unwrap();
+        Ok(movies)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn movie_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<MovieAnticipated>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client.req_api(&app, API.movie.anticipated.method.as_str(), API.movie.anticipated.uri.clone(), None, None, Some(limit), Some(page), true).await;
+    if let Ok(result) = result {
+        let movies = serde_json::from_value::<Vec<MovieAnticipated>>(result).unwrap();
         Ok(movies)
     } else {
         Err(result.unwrap_err())

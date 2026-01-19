@@ -84,6 +84,11 @@ export interface MovieTrending {
   movie?: Movie;
 }
 
+export interface MovieAnticipated {
+  list_count: number;
+  movie: Movie;
+}
+
 // 电视剧类型
 export interface Show extends BaseMedia {
   watchers?: number;
@@ -101,6 +106,11 @@ export interface Show extends BaseMedia {
 export interface ShowTrending {
   watchers?: number;
   show?: Show;
+}
+
+export interface ShowAnticipated {
+  list_count: number;
+  show: Show;
 }
 
 // 电视剧详细信息

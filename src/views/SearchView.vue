@@ -114,27 +114,61 @@
         />
       </section>
 
-      <!-- 热门搜索 -->
+      <!-- 搜索历史与推荐 -->
       <section class="trending-section" v-else>
-        <h2 class="section-title">🔥 热门搜索</h2>
-        <div class="trending-tags">
-          <a-tag
-            v-for="tag in trendingSearches"
-            :key="tag"
-            class="trending-tag"
-            @click="searchTrending(tag)"
-          >
-            {{ tag }}
-          </a-tag>
+        <div class="history-section" v-if="searchHistory.length > 0">
+          <div class="section-header">
+            <h2 class="section-title">
+              <icon-history /> 搜索记录
+            </h2>
+            <a-button type="text" size="small" @click="clearHistory" class="clear-btn">
+              <icon-delete /> 清空
+            </a-button>
+          </div>
+          <div class="history-tags">
+            <a-tag
+              v-for="tag in searchHistory"
+              :key="tag"
+              class="history-tag"
+              closable
+              @click="searchTrending(tag)"
+              @close="removeHistoryItem(tag)"
+            >
+              {{ tag }}
+            </a-tag>
+          </div>
         </div>
 
-        <h2 class="section-title">💫 推荐发现</h2>
-        <MediaGrid
-          :items="discoverItems"
-          :loading="loadingDiscover"
-          :show-meta="true"
-          empty-message="加载推荐内容中..."
-        />
+        <h2 class="section-title">
+          <icon-trophy /> 热门期待榜
+        </h2>
+        <div class="top-search-list">
+          <div v-if="loadingTopSearch" class="loading-state">
+            <a-spin /> 加载榜单中...
+          </div>
+          <div 
+            v-else
+            v-for="(item, index) in topSearchItems" 
+            :key="item.ids?.trakt"
+            class="top-search-item"
+            @click="searchTrending(item.title)"
+          >
+            <div class="rank-number" :class="{'top-3': index < 3}">{{ index + 1 }}</div>
+            <div class="item-info">
+              <div class="item-title">{{ item.title }}</div>
+              <div class="item-meta">
+                <span v-if="item.year">{{ item.year }}</span>
+                <span class="dot" v-if="item.year && item.rating">•</span>
+                <span v-if="item.rating" class="rating">
+                  <icon-star-fill /> {{ item.rating.toFixed(1) }}
+                </span>
+              </div>
+            </div>
+            <div class="trend-icon">
+              <icon-fire style="color: #f53f3f" v-if="index < 3" />
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   </div>
@@ -142,14 +176,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
-import {
-  IconSearch, IconClose, IconRefresh
-} from '@arco-design/web-vue/es/icon'
+import { IconSearch, IconClose, IconRefresh, IconHistory, IconDelete, IconFire, IconTrophy, IconStarFill } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show, MovieTrending, ShowTrending } from '../types/api'
+import type { Movie, Show, MovieAnticipated, ShowAnticipated } from '../types/api'
 import { usePageState } from '../composables/usePageState'
 import { getMovieChineseTranslation, getShowChineseTranslation } from '../utils/translation'
 
@@ -174,9 +206,10 @@ defineOptions({
 // 响应式数据
 const searchQuery = ref('')
 const searching = ref(false)
-const loadingDiscover = ref(false)
 const searchResults = ref<(Movie | Show)[]>([])
-const discoverItems = ref<(Movie | Show)[]>([])
+const topSearchItems = ref<(Movie | Show)[]>([])
+const loadingTopSearch = ref(false)
+const searchHistory = ref<string[]>([])
 
 const filters = ref({
   type: '',
@@ -184,7 +217,37 @@ const filters = ref({
   genre: ''
 })
 
-const trendingSearches = ref<string[]>([])
+// 历史记录管理
+const loadSearchHistory = () => {
+  try {
+    const history = localStorage.getItem('search_history')
+    if (history) {
+      searchHistory.value = JSON.parse(history)
+    }
+  } catch (e) {
+    console.error('加载搜索记录失败', e)
+  }
+}
+
+const saveToHistory = (query: string) => {
+  if (!query.trim()) return
+  const history = searchHistory.value.filter(item => item !== query)
+  history.unshift(query)
+  if (history.length > 20) history.pop()
+  searchHistory.value = history
+  localStorage.setItem('search_history', JSON.stringify(history))
+}
+
+const removeHistoryItem = (item: string) => {
+  searchHistory.value = searchHistory.value.filter(i => i !== item)
+  localStorage.setItem('search_history', JSON.stringify(searchHistory.value))
+}
+
+const clearHistory = () => {
+  searchHistory.value = []
+  localStorage.removeItem('search_history')
+  Message.success('搜索记录已清空')
+}
 
 // 选项数据
 const yearOptions = computed(() => {
@@ -288,6 +351,7 @@ const handleSearch = () => {
 const performSearch = async () => {
   if (!searchQuery.value.trim()) return
 
+  saveToHistory(searchQuery.value.trim())
   searching.value = true
   try {
     const results = await invoke<SearchResultItem[]>('search_media', { 
@@ -354,19 +418,19 @@ const getEmptyMessage = () => {
   return `没有找到 "${searchQuery.value}" 相关的结果`
 }
 
-const loadDiscoverData = async () => {
-  loadingDiscover.value = true
+const loadTopSearchData = async () => {
+  loadingTopSearch.value = true
   try {
-    // 并行获取热门电影和电视剧
-    const [trendingMovies, trendingShows] = await Promise.all([
-      invoke<MovieTrending[]>('movie_trending_page', { page: 1, limit: 10 }),
-      invoke<ShowTrending[]>('show_trending_page', { page: 1, limit: 10 })
+    // 并行获取最受期待电影和电视剧 (Anticipated)
+    const [anticipatedMovies, anticipatedShows] = await Promise.all([
+      invoke<MovieAnticipated[]>('movie_anticipated', { page: 1, limit: 10 }),
+      invoke<ShowAnticipated[]>('show_anticipated', { page: 1, limit: 10 })
     ])
 
     const items: (Movie | Show)[] = []
     
-    if (trendingMovies) {
-      trendingMovies.forEach(item => {
+    if (anticipatedMovies) {
+      anticipatedMovies.forEach(item => {
         if (item.movie) {
           item.movie.media_type = 'movie'
           items.push(item.movie)
@@ -374,8 +438,8 @@ const loadDiscoverData = async () => {
       })
     }
     
-    if (trendingShows) {
-      trendingShows.forEach(item => {
+    if (anticipatedShows) {
+      anticipatedShows.forEach(item => {
         if (item.show) {
           item.show.media_type = 'show'
           items.push(item.show)
@@ -383,75 +447,33 @@ const loadDiscoverData = async () => {
       })
     }
     
-    // 随机打乱顺序
-    discoverItems.value = items.sort(() => Math.random() - 0.5)
+    // 随机打乱顺序并取前10个作为 Top Search
+    topSearchItems.value = items.sort(() => Math.random() - 0.5).slice(0, 10)
     
-    // 加载热门搜索标签（使用第2页数据，避免重复）
-    loadTrendingTags()
-  } catch (error) {
-    console.error('加载推荐内容失败:', error)
-  } finally {
-    loadingDiscover.value = false
-  }
-}
-
-const loadTrendingTags = async () => {
-  try {
-    const [movies, shows] = await Promise.all([
-      invoke<MovieTrending[]>('movie_trending_page', { page: 2, limit: 10 }),
-      invoke<ShowTrending[]>('show_trending_page', { page: 2, limit: 10 })
-    ])
-    
-    const tags: string[] = []
+    // 尝试加载中文标题
     const fetchPromises: Promise<void>[] = []
-    
-    // 处理电影
-    if (movies) {
-      movies.slice(0, 8).forEach(item => {
-        if (item.movie?.title) {
-          const promise = (async () => {
-            let title = item.movie!.title
-            // 尝试获取中文标题
-            if (item.movie!.ids?.trakt) {
-              try {
-                const trans = await getMovieChineseTranslation(item.movie!.ids.trakt)
-                if (trans?.title) title = trans.title
-              } catch (e) { /* ignore */ }
+    topSearchItems.value.forEach(item => {
+      const id = item.ids?.trakt
+      if (id) {
+        const promise = (async () => {
+          try {
+            const trans = item.media_type === 'movie' 
+              ? await getMovieChineseTranslation(id)
+              : await getShowChineseTranslation(id)
+            if (trans?.title) {
+              item.title = trans.title
             }
-            tags.push(title)
-          })()
-          fetchPromises.push(promise)
-        }
-      })
-    }
-    
-    // 处理电视剧
-    if (shows) {
-      shows.slice(0, 8).forEach(item => {
-        if (item.show?.title) {
-          const promise = (async () => {
-            let title = item.show!.title
-            if (item.show!.ids?.trakt) {
-              try {
-                const trans = await getShowChineseTranslation(item.show!.ids.trakt)
-                if (trans?.title) title = trans.title
-              } catch (e) { /* ignore */ }
-            }
-            tags.push(title)
-          })()
-          fetchPromises.push(promise)
-        }
-      })
-    }
-    
+          } catch (e) { /* ignore */ }
+        })()
+        fetchPromises.push(promise)
+      }
+    })
     await Promise.all(fetchPromises)
-    // 打乱标签顺序并取前12个
-    trendingSearches.value = tags.sort(() => Math.random() - 0.5).slice(0, 12)
     
   } catch (error) {
-    console.error('加载热门搜索标签失败:', error)
-    // 失败时使用默认标签
-    trendingSearches.value = ['阿凡达', '复仇者联盟', '权力的游戏', '黑镜', '星际穿越']
+    console.error('加载热门搜索内容失败:', error)
+  } finally {
+    loadingTopSearch.value = false
   }
 }
 
@@ -484,7 +506,8 @@ onMounted(() => {
     }
   }
   
-  loadDiscoverData()
+  loadTopSearchData()
+  loadSearchHistory()
 })
 
 // 页面卸载前保存状态
@@ -502,11 +525,45 @@ onBeforeUnmount(() => {
 
 .search-section {
   margin-bottom: 40px;
+  text-align: center;
+}
+
+.search-header {
+  margin-bottom: 32px;
+}
+
+.search-form {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 24px;
+}
+
+.search-input {
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .search-header {
   text-align: center;
   margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%; /* 确保占满宽度 */
+}
+
+.search-form {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 24px;
+}
+
+.search-header {
+  text-align: center;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .search-title {
@@ -558,40 +615,145 @@ onBeforeUnmount(() => {
   font-weight: 400;
 }
 
-.trending-section {
-  margin-top: 40px;
+.history-section {
+  margin-bottom: 48px; /* 增加底部间距 */
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .section-title {
   font-size: 20px;
   font-weight: 600;
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0; /* 增加标题底部间距 20px -> 24px */
   color: #1d1d1f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.trending-tags {
+.clear-btn {
+  color: #86909c;
+}
+
+.clear-btn:hover {
+  color: #f53f3f;
+  background-color: transparent;
+}
+
+.history-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 40px;
+  gap: 12px;
 }
 
-.trending-tag {
+.history-tag {
   cursor: pointer;
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #e8e8e8;
-  border-radius: 20px;
+  padding: 6px 16px;
+  height: 36px;
+  line-height: 24px;
+  font-size: 14px;
+  background: #f7f8fa;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  color: #4e5969;
   transition: all 0.2s ease;
 }
 
-.trending-tag:hover {
-  background: #f5f5f7;
-  border-color: #d1d1d1;
-  transform: translateY(-1px);
+.history-tag:hover {
+  background: #e5e6eb;
+  color: #1d1d1f;
 }
 
-/* 响应式设计 */
+.trending-section {
+  margin-top: 48px; /* 增加顶部间距 */
+}
+
+.top-search-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.top-search-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f7f8fa;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.top-search-item:hover {
+  background: #e5e6eb;
+  transform: translateY(-2px);
+}
+
+.rank-number {
+  font-size: 18px;
+  font-weight: 700;
+  width: 32px;
+  color: #86909c;
+  font-style: italic;
+}
+
+.rank-number.top-3 {
+  color: #f53f3f;
+  font-size: 20px;
+}
+
+.item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: #86909c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating {
+  color: #ffb400;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trend-icon {
+  margin-left: 8px;
+}
+
+.loading-state {
+  grid-column: span 2;
+  text-align: center;
+  padding: 40px;
+  color: #86909c;
+}
+
+@media (max-width: 640px) {
+  .top-search-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .search-title {
     font-size: 24px;

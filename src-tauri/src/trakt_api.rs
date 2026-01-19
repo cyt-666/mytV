@@ -90,6 +90,7 @@ pub struct UserApi {
 pub struct MovieApi {
     pub trending: Entry,
     pub popular: Entry,
+    pub anticipated: Entry,
     pub details: Entry,
     pub trans: Entry,
 }
@@ -98,6 +99,7 @@ pub struct MovieApi {
 pub struct ShowApi {
     pub trending: Entry,
     pub popular: Entry,
+    pub anticipated: Entry,
     pub details: Entry,
     pub trans: Entry,
     pub seasons: Entry,

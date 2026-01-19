@@ -8,6 +8,12 @@ pub struct ShowTrending {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowAnticipated {
+    pub list_count: u32,
+    pub show: Show,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Show {
     pub title: String,
     pub year: Option<u32>,
