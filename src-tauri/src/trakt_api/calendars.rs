@@ -27,7 +27,7 @@ pub async fn get_calendar_movies(app: AppHandle, start_date: String, days: u32) 
     let mut uri = API.calendars.movies.uri.clone();
     uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
     
-    let result = client.req_api(&app, API.calendars.movies.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    let result = client.req_api(&app, API.calendars.movies.method.as_str(), uri, None, None, Some(100), Some(1), true).await;
     
     if let Ok(result) = result {
         let movies = serde_json::from_value::<Vec<CalendarMovie>>(result).unwrap_or_default();
@@ -45,7 +45,7 @@ pub async fn get_calendar_shows(app: AppHandle, start_date: String, days: u32) -
     let mut uri = API.calendars.shows.uri.clone();
     uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
     
-    let result = client.req_api(&app, API.calendars.shows.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    let result = client.req_api(&app, API.calendars.shows.method.as_str(), uri, None, None, Some(100), Some(1), true).await;
     
     if let Ok(result) = result {
         let shows = serde_json::from_value::<Vec<CalendarShow>>(result).unwrap_or_default();
@@ -63,7 +63,7 @@ pub async fn get_calendar_new_shows(app: AppHandle, start_date: String, days: u3
     let mut uri = API.calendars.new_shows.uri.clone();
     uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
     
-    let result = client.req_api(&app, API.calendars.new_shows.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    let result = client.req_api(&app, API.calendars.new_shows.method.as_str(), uri, None, None, Some(100), Some(1), true).await;
     
     if let Ok(result) = result {
         let shows = serde_json::from_value::<Vec<CalendarShow>>(result).unwrap_or_default();
@@ -81,7 +81,7 @@ pub async fn get_calendar_premieres(app: AppHandle, start_date: String, days: u3
     let mut uri = API.calendars.season_premieres.uri.clone();
     uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
     
-    let result = client.req_api(&app, API.calendars.season_premieres.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    let result = client.req_api(&app, API.calendars.season_premieres.method.as_str(), uri, None, None, Some(100), Some(1), true).await;
     
     if let Ok(result) = result {
         let shows = serde_json::from_value::<Vec<CalendarShow>>(result).unwrap_or_default();
@@ -99,7 +99,7 @@ pub async fn get_my_calendar_shows(app: AppHandle, start_date: String, days: u32
     let mut uri = API.calendars.my_shows.uri.clone();
     uri = uri.replace("start_date", &start_date).replace("days", &days.to_string());
     
-    let result = client.req_api(&app, API.calendars.my_shows.method.as_str(), uri, None, None, Some(50), Some(1), true).await;
+    let result = client.req_api(&app, API.calendars.my_shows.method.as_str(), uri, None, None, Some(100), Some(1), true).await;
     
     if let Ok(result) = result {
         let shows = serde_json::from_value::<Vec<CalendarShow>>(result).unwrap_or_default();
