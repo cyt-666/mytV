@@ -7,6 +7,7 @@ use crate::trakt_api::{ApiClient, API};
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Watched {
@@ -121,9 +122,15 @@ pub async fn get_watchlist(app: AppHandle, id: String, select_type: String) -> R
     let mut client = client.lock().await;
     let mut uri = API.user.watchlist.uri.clone();
     uri = uri.replace("id", &id).replace("type", &select_type);
-    let result = client.req_api(&app, API.user.watchlist.method.as_str(), uri, None, None, None, None, true).await;
+    
+    // Add extended=full to params to ensure we get rating, overview etc.
+    let mut params = HashMap::new();
+    params.insert("extended".to_string(), "full".to_string());
+    
+    // Use limit=100 to fetch more items at once
+    let result = client.req_api(&app, API.user.watchlist.method.as_str(), uri, Some(params), None, Some(100), None, true).await;
+    
     if let Ok(result) = result {
-        println!("{}", result);
         let watchlist = serde_json::from_value::<Vec<WatchlistItem>>(result).unwrap();
         Ok(watchlist)
     } else {

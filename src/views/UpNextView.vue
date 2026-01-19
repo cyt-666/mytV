@@ -70,13 +70,21 @@
             </div>
           </div>
         </div>
+        
+        <!-- 加载更多提示 -->
+        <div v-if="loadingMore" class="loading-more">
+          <a-spin /> 正在加载更多...
+        </div>
+        <div v-if="!hasMore && upNextItems.length > 0" class="no-more">
+          没有更多内容了
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { IconImage } from '@arco-design/web-vue/es/icon'
@@ -90,6 +98,9 @@ const router = useRouter()
 const { userInfo } = useAuth()
 
 const loading = ref(false)
+const loadingMore = ref(false)
+const hasMore = ref(true)
+const page = ref(1)
 const upNextItems = ref<UpNextItem[]>([])
 const showTranslations = ref<Map<number, TranslationResult>>(new Map())
 
@@ -111,32 +122,63 @@ const formatRelativeTime = (time: string | undefined) => {
   return '刚刚'
 }
 
-const loadUpNext = async () => {
-  if (!userInfo.value?.username) return
+const loadTranslations = async (items: UpNextItem[]) => {
+  const uniqueShowIds = [...new Set(items.map(i => i.show.ids?.trakt).filter(Boolean))] as number[]
   
-  loading.value = true
+  // Filter out IDs we already have
+  const idsToFetch = uniqueShowIds.filter(id => !showTranslations.value.has(id))
+  
+  // Parallel fetch
+  await Promise.all(idsToFetch.map(async (showId) => {
+    try {
+      const translation = await getShowChineseTranslation(showId)
+      if (translation) {
+        showTranslations.value.set(showId, translation)
+      }
+    } catch (e) {
+      console.warn(`Failed to load translation for show ${showId}`, e)
+    }
+  }))
+}
+
+const loadUpNext = async (isLoadMore = false) => {
+  if (!userInfo.value?.username) return
+  if (isLoadMore && (!hasMore.value || loadingMore.value)) return
+  
+  if (isLoadMore) {
+    loadingMore.value = true
+  } else {
+    loading.value = true
+    page.value = 1
+    upNextItems.value = []
+  }
+
   try {
     const result = await invoke<UpNextItem[]>('get_up_next', {
-      username: userInfo.value.username
+      username: userInfo.value.username,
+      page: page.value,
+      limit: 20
     })
-    upNextItems.value = result
+    
+    if (result.length < 20) {
+      hasMore.value = false
+    } else {
+      hasMore.value = true
+      page.value++
+    }
+
+    if (isLoadMore) {
+      upNextItems.value.push(...result)
+    } else {
+      upNextItems.value = result
+    }
+    
     loadTranslations(result)
   } catch (error) {
     console.error('加载待看剧集失败:', error)
   } finally {
     loading.value = false
-  }
-}
-
-const loadTranslations = async (items: UpNextItem[]) => {
-  const uniqueShowIds = [...new Set(items.map(i => i.show.ids?.trakt).filter(Boolean))] as number[]
-  for (const showId of uniqueShowIds) {
-    if (!showTranslations.value.has(showId)) {
-      const translation = await getShowChineseTranslation(showId)
-      if (translation) {
-        showTranslations.value.set(showId, translation)
-      }
-    }
+    loadingMore.value = false
   }
 }
 
@@ -160,8 +202,43 @@ const navigateToEpisode = (item: UpNextItem) => {
   })
 }
 
-onMounted(() => {
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (!target) return
+  
+  // 增加调试日志
+  console.log('Scroll:', target.scrollTop, target.clientHeight, target.scrollHeight)
+  
+  // 增加阈值到 300px，确保更容易触发
+  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 300) {
+    loadUpNext(true)
+  }
+}
+
+onMounted(async () => {
   loadUpNext()
+  await nextTick()
+  
+  // 尝试在更大的范围内查找滚动容器
+  // AppLayout 的 .app-content 是 overflow-y: auto 的容器
+  const content = document.querySelector('.app-content')
+  
+  if (content) {
+    console.log('UpNextView: Scroll listener attached to .app-content')
+    content.addEventListener('scroll', handleScroll)
+  } else {
+    console.error('UpNextView: Could not find scroll container (.app-content)')
+    // 尝试直接在 window 上绑定（作为后备，虽然通常不起作用）
+    window.addEventListener('scroll', handleScroll, true)
+  }
+})
+
+onBeforeUnmount(() => {
+  const content = document.querySelector('.app-content')
+  if (content) {
+    content.removeEventListener('scroll', handleScroll)
+  }
+  window.removeEventListener('scroll', handleScroll, true)
 })
 </script>
 
@@ -327,6 +404,13 @@ onMounted(() => {
   border-radius: 4px;
 }
 
+.loading-more, .no-more {
+  text-align: center;
+  padding: 20px;
+  color: #86909c;
+  font-size: 14px;
+}
+
 @media (max-width: 640px) {
   .up-next-item {
     padding: 12px;
@@ -347,5 +431,4 @@ onMounted(() => {
     margin-bottom: 12px;
   }
 }
-
 </style>

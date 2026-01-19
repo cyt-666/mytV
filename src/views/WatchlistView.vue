@@ -173,15 +173,16 @@ const loadWatchlist = async () => {
   
   loading.value = true
   try {
-    const movieResults = await invoke<WatchlistItem[]>('get_watchlist', {
-      id: userInfo.value.username,
-      selectType: 'movies'
-    })
-    
-    const showResults = await invoke<WatchlistItem[]>('get_watchlist', {
-      id: userInfo.value.username,
-      selectType: 'shows'
-    })
+    const [movieResults, showResults] = await Promise.all([
+      invoke<WatchlistItem[]>('get_watchlist', {
+        id: userInfo.value.username,
+        selectType: 'movies'
+      }),
+      invoke<WatchlistItem[]>('get_watchlist', {
+        id: userInfo.value.username,
+        selectType: 'shows'
+      })
+    ])
     
     const items: ExtendedMedia[] = []
     

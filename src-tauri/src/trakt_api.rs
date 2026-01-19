@@ -192,14 +192,30 @@ impl ApiClient {
             }
             Url::parse(format!("{}{}", TRAKT_API_HOST, uri).as_str()).unwrap()
         };
+
+        // 处理参数
+        let mut final_params = params.unwrap_or_default();
+        
         if images {
-            url.query_pairs_mut().append_pair("extended", "images");
+            if let Some(extended) = final_params.get_mut("extended") {
+                if !extended.contains("images") {
+                    *extended = format!("{},images", extended);
+                }
+            } else {
+                final_params.insert("extended".to_string(), "images".to_string());
+            }
         }
+
         if let Some(limit) = limit {
-            url.query_pairs_mut().append_pair("limit", limit.to_string().as_str());
+            final_params.insert("limit".to_string(), limit.to_string());
         }
         if let Some(page) = page {
-            url.query_pairs_mut().append_pair("page", page.to_string().as_str());
+            final_params.insert("page".to_string(), page.to_string());
+        }
+
+        // 将参数添加到URL
+        for (key, value) in &final_params {
+            url.query_pairs_mut().append_pair(key.as_str(), value.as_str());
         }
         
         debug!("=== API 请求详情 ===");
@@ -211,11 +227,7 @@ impl ApiClient {
         let mut req: RequestBuilder;
         match method.as_str() {
             "get" => {
-                if let Some(params) = params {
-                    for (key, value) in params {
-                        url.query_pairs_mut().append_pair(key.as_str(), value.as_str());
-                    }
-                }
+                // params 已经在上面处理并添加到 url 中了
                 req = self.client.get(url.clone())
                     .header("Content-Type", "application/json")
                     .header("trakt-api-version", "2")

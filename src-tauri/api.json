@@ -139,7 +139,9 @@
         "trending":{
             "uri":"/movies/trending",
             "method":"GET",
-            "params":{}
+            "params":{
+                "extended":"full,images"
+            }
         },
         "popular":{
             "uri":"/movies/popular",
