@@ -117,6 +117,7 @@ import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show, UserStats } from '../types/api'
 import { useAuth } from '../composables/useAuth'
 import { usePageState } from '../composables/usePageState'
+import { useUserDataUpdate } from '../composables/useEvent'
 
 interface HistoryItem {
   id: number
@@ -154,9 +155,43 @@ const filterType = ref('')
 const dateRange = ref([])
 const stats = ref<UserStats | null>(null)
 
-// 简单的本地统计（仅用于显示本月数据等无法从API直接获取的特定统计）
+// 简单的本地统计
 const localStats = ref({
   thisMonth: 0
+})
+
+// 监听 Stats 更新
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.ids?.slug) return
+  
+  if (payload.key === `stats_${userInfo.value.ids.slug}`) {
+    stats.value = payload.data as UserStats
+  }
+})
+
+// 监听 History 更新 (仅第一页)
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.ids?.slug) return
+  
+  const cacheKey = `history_${userInfo.value.ids.slug}_p1_l${limit}`
+  if (payload.key === cacheKey) {
+    console.log('收到 History 第一页更新')
+    // 重置并重新处理
+    // 注意：这可能会导致用户正在查看的列表突然变化
+    // 更好的做法是提示用户刷新，或者只在用户还在第一页时静默刷新
+    if (page.value === 1) {
+      // 重新处理第一页数据
+      
+      // 这里简化处理，直接替换
+      // 实际应该合并去重
+      // 为了安全起见，这里仅打印日志，不强制刷新，以免打断用户
+      // 或者我们可以弹出一个 Toast "有新的观看记录，点击刷新"
+      Message.info({
+        content: '发现新的观看记录，请刷新页面查看',
+        duration: 3000
+      })
+    }
+  }
 })
 
 const filteredItems = computed(() => {
@@ -164,7 +199,6 @@ const filteredItems = computed(() => {
   
   if (filterType.value) {
     items = items.filter(item => {
-      // 优先使用显式的 media_type
       if (item.media_type) {
         return item.media_type === filterType.value
       }
@@ -173,7 +207,6 @@ const filteredItems = computed(() => {
     })
   }
   
-  // 按时间倒序排序（时间轴形式）
   items.sort((a, b) => {
     if (a.watched_at && b.watched_at) {
       return new Date(b.watched_at).getTime() - new Date(a.watched_at).getTime()
@@ -184,7 +217,6 @@ const filteredItems = computed(() => {
   return items
 })
 
-// 时间轴分组
 interface TimelineGroup {
   label: string
   items: HistoryMedia[]
@@ -198,7 +230,6 @@ const timelineGroups = computed<TimelineGroup[]>(() => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
   
-  // 按日期分组，使用 Map 保持插入顺序
   const groupsMap = new Map<string, HistoryMedia[]>()
   
   for (const item of items) {
@@ -215,7 +246,6 @@ const timelineGroups = computed<TimelineGroup[]>(() => {
       } else if (watchedDay.getTime() >= yesterday.getTime()) {
         label = '昨天'
       } else {
-        // 显示具体日期：1月15日
         label = `${watchedDate.getMonth() + 1}月${watchedDate.getDate()}日`
       }
     }
@@ -226,7 +256,6 @@ const timelineGroups = computed<TimelineGroup[]>(() => {
     groupsMap.get(label)!.push(item)
   }
   
-  // 转换为数组，顺序已经按时间倒序（因为 items 本身是倒序的）
   return Array.from(groupsMap.entries()).map(([label, items]) => ({ label, items }))
 })
 
@@ -302,13 +331,11 @@ const loadHistory = async (isLoadMore = false) => {
   try {
     let addedCount = 0
     let attempt = 0
-    const maxAttempts = 5 // 防止无限循环
+    const maxAttempts = 5 
     
-    // 初始化去重集合
     const seenShows = new Set<number>()
     const seenMovies = new Set<number>()
     
-    // 如果是加载更多，需要保留已有的去重记录
     if (isLoadMore) {
       historyItems.value.forEach(item => {
         if ('ids' in item && item.ids?.trakt) {
@@ -321,7 +348,6 @@ const loadHistory = async (isLoadMore = false) => {
       })
     }
 
-    // 循环加载直到获取到新数据或没有更多数据
     while (addedCount === 0 && hasMore.value && attempt < maxAttempts) {
       attempt++
       
@@ -331,7 +357,6 @@ const loadHistory = async (isLoadMore = false) => {
         limit: limit
       })
       
-      // 如果返回的数据少于limit，说明没有更多数据了
       if (results.length < limit) {
         hasMore.value = false
       }
@@ -343,12 +368,10 @@ const loadHistory = async (isLoadMore = false) => {
           const movieId = item.movie.ids?.trakt
           if (movieId) {
             if (seenMovies.has(movieId)) {
-              // 已存在，增加计数
               const existing = items.find(i => i.ids?.trakt === movieId && i.media_type === 'movie')
               if (existing) {
                 existing.watch_count = (existing.watch_count || 1) + 1
               } else {
-                // 检查历史列表
                 const existingOld = historyItems.value.find(i => i.ids?.trakt === movieId && i.media_type === 'movie')
                 if (existingOld) {
                   existingOld.watch_count = (existingOld.watch_count || 1) + 1
@@ -386,7 +409,6 @@ const loadHistory = async (isLoadMore = false) => {
         }
       }
       
-      // 计算本月观看数
       const now = new Date()
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const newThisMonthCount = results.filter(item => {
@@ -410,7 +432,6 @@ const loadHistory = async (isLoadMore = false) => {
       addedCount = items.length
       page.value++
       
-      // 如果获取到了新数据，或者已经没有更多数据了，跳出循环
       if (addedCount > 0 || !hasMore.value) break
     }
     
@@ -440,7 +461,6 @@ onMounted(() => {
     loadStats()
     loadHistory()
   } else if (!stats.value) {
-    // 如果恢复了列表但没有统计数据（理论上一起恢复），重新加载统计
     loadStats()
   }
 })
@@ -608,4 +628,4 @@ onBeforeUnmount(() => {
     font-size: 24px;
   }
 }
-</style> 
+</style>

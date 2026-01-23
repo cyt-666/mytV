@@ -10,6 +10,8 @@ use token::Token;
 use tokio::sync::Mutex;
 use trakt_api::ApiClient;
 use db::cache;
+use std::fs;
+use std::path::Path;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,7 +35,7 @@ pub fn run() {
         .plugin(tauri_plugin_oauth::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_sql::Builder::default().add_migrations("sqlite:mytv.db", crate::db::get_migrations()).build())
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             trakt_api::auth::start_trakt_user_auth,
             trakt_api::auth::get_token,
@@ -119,28 +121,34 @@ pub fn run() {
                 }
             }
 
-            // 降级：如果 DB 中没有，尝试从旧的 app_data.json 恢复 (迁移逻辑)
+            // 降级：如果 DB 中没有，尝试从旧的 app_data.json 文件恢复 (平滑迁移)
             if !token_recovered {
-                let store = app.store("app_data.json");
-                if let Ok(store) = store {
-                    if store.has("token") {
-                        let token_val = store.get("token").unwrap();
-                        let token_res = serde_json::from_value::<Token>(token_val.clone());
-                        match token_res {
-                            Ok(token) => {
-                                app.manage(Mutex::new(token));
-                                log::info!("Token recovered from app_data.json");
-                                
-                                // 立即迁移到 DB
-                                if let Some(ref pool) = pool {
-                                    let _ = tauri::async_runtime::block_on(async {
-                                        let _ = cache::set_config(pool, "token", &token_val).await;
-                                        log::info!("Token migrated to DB");
-                                    });
+                if let Ok(app_dir) = app.path().app_data_dir() {
+                    let old_data_path = app_dir.join("app_data.json");
+                    if old_data_path.exists() {
+                        log::info!("Found old app_data.json at {:?}", old_data_path);
+                        if let Ok(content) = fs::read_to_string(old_data_path) {
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                if let Some(token_val) = json.get("token") {
+                                    if let Ok(token) = serde_json::from_value::<Token>(token_val.clone()) {
+                                        app.manage(Mutex::new(token));
+                                        log::info!("Token successfully migrated from app_data.json");
+                                        
+                                        // 立即迁移到 DB
+                                        if let Some(ref pool) = pool {
+                                            let _ = tauri::async_runtime::block_on(async {
+                                                let _ = cache::set_config(pool, "token", token_val).await;
+                                                log::info!("Token saved to DB");
+                                            });
+                                        }
+                                    } else {
+                                        log::error!("Failed to parse token from app_data.json");
+                                    }
                                 }
                             }
-                            _ => {}
                         }
+                    } else {
+                        log::info!("Old app_data.json not found, new user");
                     }
                 }
             }

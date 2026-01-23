@@ -87,8 +87,10 @@
           <a-tab-pane key="movies" title="🎬 推荐电影">
             <MediaGrid
               :items="recommendedMovies"
-              :loading="loading.movies"
-              :has-more="false"
+              :loading="loading.movies && recommendedMoviesPage === 1"
+              :loading-more="loading.movies && recommendedMoviesPage > 1"
+              :has-more="hasMoreRecommendedMovies"
+              @load-more="loadMoreRecommendedMovies"
               media-type="movie"
             />
           </a-tab-pane>
@@ -96,8 +98,10 @@
           <a-tab-pane key="shows" title="📺 推荐剧集">
             <MediaGrid
               :items="recommendedShows"
-              :loading="loading.shows"
-              :has-more="false"
+              :loading="loading.shows && recommendedShowsPage === 1"
+              :loading-more="loading.shows && recommendedShowsPage > 1"
+              :has-more="hasMoreRecommendedShows"
+              @load-more="loadMoreRecommendedShows"
               media-type="show"
             />
           </a-tab-pane>
@@ -197,16 +201,14 @@ const dataLoaded = ref({
 const trendingMoviesPage = ref(1)
 const trendingShowsPage = ref(1)
 
-// 计算属性 (currently unused but may be needed for future features)
-// const currentItems = computed(() => {
-//   switch (activeTab.value) {
-//     case 'trending': return trendingMovies.value
-//     case 'movies': return recommendedMovies.value
-//     case 'shows': return recommendedShows.value
-//     case 'recent': return recentItems.value
-//     default: return []
-//   }
-// })
+// 推荐分页状态
+const recommendedMoviesPage = ref(1)
+const hasMoreRecommendedMovies = ref(true)
+const isFallbackMovies = ref(false)
+
+const recommendedShowsPage = ref(1)
+const hasMoreRecommendedShows = ref(true)
+const isFallbackShows = ref(false)
 
 // 方法
 const getHeroBackground = (item: Movie) => {
@@ -261,12 +263,14 @@ const loadTabData = async (tab: string) => {
       break
     case 'movies':
       if (!dataLoaded.value.movies) {
-        await loadMoviesData()
+        await fetchRecommendedMovies(1)
+        dataLoaded.value.movies = true
       }
       break
     case 'shows':
       if (!dataLoaded.value.shows) {
-        await loadShowsData()
+        await fetchRecommendedShows(1)
+        dataLoaded.value.shows = true
       }
       break
     case 'recent':
@@ -305,36 +309,51 @@ const loadFeaturedData = async () => {
   }
 }
 
-const loadMoviesData = async () => {
-  if (loading.value.movies || dataLoaded.value.movies) return
-
+// 推荐电影逻辑
+const fetchRecommendedMovies = async (page: number) => {
   loading.value.movies = true
   try {
     let movies: Movie[] = []
+    const limit = 40
     
-    if (isLoggedIn.value) {
+    // 如果已登录且未进入降级模式，尝试获取个性化推荐
+    if (isLoggedIn.value && !isFallbackMovies.value) {
       try {
-        // 已登录：获取个性化推荐
-        movies = await invoke<MoviesRecommendResponse>("movies_recommand")
-      } catch (e) {
-        console.warn('个性化推荐获取失败，降级为热门推荐', e)
-        // 失败降级为 Popular
-        const res = await invoke<Movie[]>("movie_popular_page", { page: 1, limit: 40 })
+        // 使用分页 API
+        const res = await invoke<MoviesRecommendResponse>("movies_recommand_page", { page, limit })
         movies = res
+      } catch (e) {
+        if (page === 1) {
+           console.warn('个性化推荐获取失败，降级为热门推荐', e)
+           isFallbackMovies.value = true
+           // 递归重试
+           loading.value.movies = false
+           return fetchRecommendedMovies(1)
+        }
+        // 如果是翻页失败，暂不处理，保留现状
       }
-    } else {
-      // 未登录：获取 Popular 推荐 (经典高分)
-      const res = await invoke<Movie[]>("movie_popular_page", { page: 1, limit: 40 })
-      movies = res
+    } 
+    
+    // 如果未登录或处于降级模式，获取热门推荐
+    if (!isLoggedIn.value || isFallbackMovies.value) {
+       movies = await invoke<Movie[]>("movie_popular_page", { page, limit })
     }
 
-    recommendedMovies.value = movies
-    dataLoaded.value.movies = true
-    console.log('加载推荐电影:', movies.length)
+    if (movies.length < limit) {
+      hasMoreRecommendedMovies.value = false
+    }
+    
+    if (page === 1) {
+      recommendedMovies.value = movies
+    } else {
+      recommendedMovies.value.push(...movies)
+    }
+    
+    console.log('加载推荐电影 page:', page, 'count:', movies.length)
 
     // 在后台预加载翻译
-    preloadMovieTranslations(movies, (loaded, total) => {
-      console.log(`翻译加载进度: ${loaded}/${total}`)
+    preloadMovieTranslations(movies, (_loaded, _total) => {
+      // console.log(`翻译加载进度: ${loaded}/${total}`)
     })
   } catch (error) {
     console.error('加载推荐电影失败:', error)
@@ -343,33 +362,59 @@ const loadMoviesData = async () => {
   }
 }
 
-const loadShowsData = async () => {
-  if (loading.value.shows || dataLoaded.value.shows) return
+const loadMoreRecommendedMovies = async () => {
+  if (loading.value.movies || !hasMoreRecommendedMovies.value) return
+  recommendedMoviesPage.value++
+  await fetchRecommendedMovies(recommendedMoviesPage.value)
+}
 
+// 推荐剧集逻辑
+const fetchRecommendedShows = async (page: number) => {
   loading.value.shows = true
   try {
     let shows: Show[] = []
-
-    if (isLoggedIn.value) {
+    const limit = 40
+    
+    if (isLoggedIn.value && !isFallbackShows.value) {
       try {
-        shows = await invoke<ShowsRecommendResponse>("shows_recommand")
-      } catch (e) {
-        console.warn('个性化剧集推荐获取失败，降级为热门推荐', e)
-        const res = await invoke<Show[]>("show_popular_page", { page: 1, limit: 40 })
+        const res = await invoke<ShowsRecommendResponse>("shows_recommand_page", { page, limit })
         shows = res
+      } catch (e) {
+        if (page === 1) {
+           console.warn('个性化剧集推荐获取失败，降级为热门推荐', e)
+           isFallbackShows.value = true
+           loading.value.shows = false
+           return fetchRecommendedShows(1)
+        }
       }
-    } else {
-      const res = await invoke<Show[]>("show_popular_page", { page: 1, limit: 40 })
-      shows = res
+    } 
+    
+    if (!isLoggedIn.value || isFallbackShows.value) {
+       shows = await invoke<Show[]>("show_popular_page", { page, limit })
     }
 
-    recommendedShows.value = shows
-    dataLoaded.value.shows = true
+    if (shows.length < limit) {
+      hasMoreRecommendedShows.value = false
+    }
+    
+    if (page === 1) {
+      recommendedShows.value = shows
+    } else {
+      recommendedShows.value.push(...shows)
+    }
+    
+    console.log('加载推荐剧集 page:', page, 'count:', shows.length)
   } catch (error) {
     console.error('加载推荐剧集失败:', error)
   } finally {
     loading.value.shows = false
   }
+}
+
+const loadMoreRecommendedShows = async () => {
+  if (loading.value.shows || !hasMoreRecommendedShows.value) return
+  recommendedShowsPage.value++
+  await fetchRecommendedShows(recommendedShowsPage.value)
 }
 
 const loadRecentData = async () => {
@@ -517,8 +562,8 @@ const loadMoreTrendingMovies = async () => {
       trendingMovies.value.push(...movies)
 
       // 在后台预加载翻译
-      preloadMovieTranslations(movies, (loaded, total) => {
-        console.log(`更多热门电影翻译加载进度: ${loaded}/${total}`)
+      preloadMovieTranslations(movies, (_loaded, _total) => {
+        // console.log(`更多热门电影翻译加载进度: ${loaded}/${total}`)
       })
     }
     trendingMoviesPage.value++
@@ -590,8 +635,8 @@ const loadTrendingMoviesData = async () => {
       dataLoaded.value.trendingMovies = true
 
       // 在后台预加载翻译
-      preloadMovieTranslations(movies, (loaded, total) => {
-        console.log(`热门电影翻译加载进度: ${loaded}/${total}`)
+      preloadMovieTranslations(movies, (_loaded, _total) => {
+        // console.log(`热门电影翻译加载进度: ${loaded}/${total}`)
       })
     }
     trendingMoviesPage.value++
@@ -708,25 +753,6 @@ watch(() => route.query.type, (newType, oldType) => {
 
 .hero-slide {
   height: 100%; /* 跟随 Carousel 高度 */
-  position: relative;
-  display: flex;
-  align-items: flex-end; /* 内容沉底 */
-  background-size: cover;
-  background-position: center top;
-}
-
-/* ... */
-
-.hero-content {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  padding: 0 60px 48px 60px; /* 减小底部 padding，防止按钮贴底被切 */
-  max-width: 1200px;
-}
-
-.hero-slide {
-  height: 500px; /* 增加高度 */
   position: relative;
   display: flex;
   align-items: flex-end; /* 内容沉底 */

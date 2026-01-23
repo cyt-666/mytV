@@ -83,8 +83,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
+import { Message } from '@arco-design/web-vue'
 import type { CalendarShow } from '../types/api'
 import { getShowChineseTranslation, type TranslationResult } from '../utils/translation'
+import { useUserDataUpdate } from '../composables/useEvent'
 
 defineOptions({ name: 'CalendarView' })
 
@@ -102,6 +104,32 @@ const dateRange = ref<[string, string]>([
   nextWeek.toISOString().split('T')[0]
 ])
 
+// 监听日历数据更新
+useUserDataUpdate((payload) => {
+  if (!dateRange.value || !dateRange.value[0] || !dateRange.value[1]) return
+  
+  const start = new Date(dateRange.value[0])
+  const end = new Date(dateRange.value[1])
+  const diffTime = Math.abs(end.getTime() - start.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+  
+  // Key format: calendar_my_shows_{start_date}_{days}
+  const expectedKey = `calendar_my_shows_${start.toISOString().split('T')[0]}_${diffDays}`
+  
+  if (payload.key === expectedKey) {
+    console.log('收到日历数据更新')
+    const newData = payload.data as CalendarShow[]
+    calendarShows.value = newData
+    loadTranslations(newData)
+    
+    Message.info({
+      content: '日历已自动刷新',
+      position: 'bottom',
+      duration: 2000
+    })
+  }
+})
+
 const fetchCalendar = async () => {
   if (!dateRange.value || !dateRange.value[0] || !dateRange.value[1]) return
 
@@ -112,6 +140,7 @@ const fetchCalendar = async () => {
     const diffTime = Math.abs(end.getTime() - start.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
 
+    // SWR
     const result = await invoke<CalendarShow[]>('get_my_calendar_shows', {
       startDate: start.toISOString().split('T')[0],
       days: diffDays

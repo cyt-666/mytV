@@ -50,13 +50,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show } from '../types/api'
 import { useAuth } from '../composables/useAuth'
 import { usePageState } from '../composables/usePageState'
+import { useUserDataUpdate } from '../composables/useEvent'
 
 interface CollectionItem {
   collected_at: string
@@ -82,12 +83,82 @@ const collectionItems = ref<ExtendedMedia[]>([])
 const filterType = ref('')
 const sortBy = ref('collected_desc')
 
+// 监听用户变化
+watch(() => userInfo.value, (newVal) => {
+  if (newVal?.username) {
+    loadCollection()
+  } else {
+    collectionItems.value = []
+  }
+})
+
+// 监听后台数据更新
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.username) return
+  
+  const username = userInfo.value.username
+  // Key format: collection_{type}_{username}
+  if (payload.key.startsWith('collection_') && payload.key.endsWith(username)) {
+    console.log('收到 Collection 更新:', payload.key)
+    
+    // 解析类型
+    const parts = payload.key.split('_')
+    if (parts.length >= 3) {
+      const type = parts[1] // movies, shows
+      const newData = payload.data as CollectionItem[]
+      
+      updateCollectionItems(type, newData)
+      
+      Message.info({
+        content: `${type === 'movies' ? '电影' : '剧集'}库已自动刷新`,
+        position: 'bottom',
+        duration: 2000
+      })
+    }
+  }
+})
+
+// 更新本地列表数据
+const updateCollectionItems = (type: string, newData: CollectionItem[]) => {
+  const currentItems = [...collectionItems.value]
+  
+  // 移除该类型的旧数据
+  const otherItems = currentItems.filter(item => {
+    // 优先使用显式的 media_type
+    if (item.media_type) {
+      return type === 'movies' ? item.media_type !== 'movie' : item.media_type !== 'show'
+    }
+    // 降级判断
+    const isMovie = 'tagline' in item
+    return type === 'movies' ? !isMovie : isMovie
+  })
+  
+  // 添加新数据
+  const newItems: ExtendedMedia[] = []
+  
+  if (type === 'movies') {
+    for (const item of newData) {
+      if (item.movie) {
+        newItems.push({ ...item.movie, collected_at: item.collected_at, media_type: 'movie' } as ExtendedMedia)
+      }
+    }
+  } else if (type === 'shows') {
+    for (const item of newData) {
+      if (item.show) {
+        newItems.push({ ...item.show, collected_at: item.collected_at, media_type: 'show' } as ExtendedMedia)
+      }
+    }
+  }
+  
+  collectionItems.value = [...otherItems, ...newItems]
+  saveCollectionState()
+}
+
 const filteredAndSortedItems = computed(() => {
   let items = [...collectionItems.value]
   
   if (filterType.value) {
     items = items.filter(item => {
-      // 优先使用显式的 media_type
       if (item.media_type) {
         return item.media_type === filterType.value
       }
@@ -109,9 +180,9 @@ const filteredAndSortedItems = computed(() => {
         }
         return 0
       case 'title_asc':
-        return a.title.localeCompare(b.title)
+        return (a.title || '').localeCompare(b.title || '')
       case 'title_desc':
-        return b.title.localeCompare(a.title)
+        return (b.title || '').localeCompare(a.title || '')
       case 'rating_desc':
         return (b.rating || 0) - (a.rating || 0)
       case 'rating_asc':
@@ -126,7 +197,6 @@ const filteredAndSortedItems = computed(() => {
 
 const saveCollectionState = () => {
   const state = {
-    collectionItems: collectionItems.value,
     filterType: filterType.value,
     sortBy: sortBy.value,
     scrollPosition: window.scrollY,
@@ -148,7 +218,6 @@ const restoreCollectionState = () => {
   if (state && state.timestamp) {
     const tenMinutes = 10 * 60 * 1000
     if (Date.now() - state.timestamp < tenMinutes) {
-      collectionItems.value = state.collectionItems || []
       filterType.value = state.filterType || ''
       sortBy.value = state.sortBy || 'collected_desc'
       
@@ -171,15 +240,17 @@ const loadCollection = async () => {
   
   loading.value = true
   try {
-    const movieResults = await invoke<CollectionItem[]>('get_collection', {
-      id: userInfo.value.username,
-      selectType: 'movies'
-    })
-    
-    const showResults = await invoke<CollectionItem[]>('get_collection', {
-      id: userInfo.value.username,
-      selectType: 'shows'
-    })
+    // SWR: 优先返回缓存，后台静默刷新
+    const [movieResults, showResults] = await Promise.all([
+      invoke<CollectionItem[]>('get_collection', {
+        id: userInfo.value.username,
+        selectType: 'movies'
+      }),
+      invoke<CollectionItem[]>('get_collection', {
+        id: userInfo.value.username,
+        selectType: 'shows'
+      })
+    ])
     
     const items: ExtendedMedia[] = []
     
@@ -208,10 +279,8 @@ const loadCollection = async () => {
 }
 
 onMounted(() => {
-  const restored = restoreCollectionState()
-  if (!restored) {
-    loadCollection()
-  }
+  restoreCollectionState()
+  loadCollection()
 })
 
 onBeforeUnmount(() => {
@@ -256,4 +325,4 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: #8e8e93;
 }
-</style> 
+</style>

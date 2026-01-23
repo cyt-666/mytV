@@ -17,7 +17,7 @@ export function useEvent<T>(name: string, callback: (payload: T) => void) {
   })
 }
 
-// 具体业务的事件监听器
+// 媒体详情更新事件
 export interface MediaUpdatePayload {
   type: 'movie' | 'show' | 'seasons';
   id: number;
@@ -26,4 +26,14 @@ export interface MediaUpdatePayload {
 
 export function useMediaUpdate(callback: (payload: MediaUpdatePayload) => void) {
   useEvent<MediaUpdatePayload>('media-update', callback)
+}
+
+// 用户数据更新事件
+export interface UserDataUpdatePayload {
+  key: string;
+  data: any;
+}
+
+export function useUserDataUpdate(callback: (payload: UserDataUpdatePayload) => void) {
+  useEvent<UserDataUpdatePayload>('user-data-update', callback)
 }

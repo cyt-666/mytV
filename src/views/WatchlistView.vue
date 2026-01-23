@@ -65,6 +65,7 @@ import MediaGrid from '../components/MediaGrid.vue'
 import type { Movie, Show, Season } from '../types/api'
 import { usePageState } from '../composables/usePageState'
 import { useAuth } from '../composables/useAuth'
+import { useUserDataUpdate } from '../composables/useEvent'
 
 interface WatchlistItem {
   listed_at: string
@@ -103,6 +104,76 @@ watch(() => userInfo.value, (newVal) => {
     watchlistItems.value = []
   }
 })
+
+// 监听后台数据更新
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.username) return
+  
+  const username = userInfo.value.username
+  // 检查是否是当前用户的 watchlist 更新
+  // Key format: watchlist_{type}_{username}
+  if (payload.key.startsWith('watchlist_') && payload.key.endsWith(username)) {
+    console.log('收到 Watchlist 更新:', payload.key)
+    
+    // 解析类型
+    const parts = payload.key.split('_')
+    if (parts.length >= 3) {
+      const type = parts[1] // movies, shows, seasons
+      const newData = payload.data as WatchlistItem[]
+      
+      updateWatchlistItems(type, newData)
+      
+      Message.info({
+        content: `${type} 清单已自动刷新`,
+        position: 'bottom',
+        duration: 2000
+      })
+    }
+  }
+})
+
+// 更新本地列表数据
+const updateWatchlistItems = (type: string, newData: WatchlistItem[]) => {
+  const currentItems = [...watchlistItems.value]
+  
+  // 移除该类型的旧数据
+  const otherItems = currentItems.filter(item => {
+    if (type === 'movies') return item.media_type !== 'movie'
+    if (type === 'shows') return item.media_type !== 'show'
+    if (type === 'seasons') return item.media_type !== 'season'
+    return true
+  })
+  
+  // 添加新数据
+  const newItems: ExtendedMedia[] = []
+  
+  if (type === 'movies') {
+    for (const item of newData) {
+      if (item.movie) {
+        newItems.push({ ...item.movie, listed_at: item.listed_at, media_type: 'movie' } as ExtendedMedia)
+      }
+    }
+  } else if (type === 'shows') {
+    for (const item of newData) {
+      if (item.show) {
+        newItems.push({ ...item.show, listed_at: item.listed_at, media_type: 'show' } as ExtendedMedia)
+      }
+    }
+  } else if (type === 'seasons') {
+    for (const item of newData) {
+      if (item.season && item.show) {
+        newItems.push({ 
+          ...item.show, 
+          listed_at: item.listed_at, 
+          media_type: 'season',
+          season_number: item.season.number
+        } as ExtendedMedia)
+      }
+    }
+  }
+  
+  watchlistItems.value = [...otherItems, ...newItems]
+}
 
 // 计算属性
 const filteredItems = computed(() => {
@@ -174,6 +245,8 @@ const loadWatchlist = async () => {
   
   loading.value = true
   try {
+    // 这里调用的是支持缓存的后端接口
+    // 如果有缓存会立即返回，旧数据会触发后台刷新
     const [movieResults, showResults, seasonResults] = await Promise.all([
       invoke<WatchlistItem[]>('get_watchlist', {
         id: userInfo.value.username,
@@ -189,6 +262,9 @@ const loadWatchlist = async () => {
       })
     ])
     
+    // 重置并合并数据
+    // 注意：这里简单地重置了，实际上如果只是部分更新可能会有闪烁
+    // 但由于是 Promise.all 同时返回，通常问题不大
     const items: ExtendedMedia[] = []
     
     for (const item of movieResults) {
@@ -212,7 +288,6 @@ const loadWatchlist = async () => {
           listed_at: item.listed_at, 
           media_type: 'season',
           season_number: item.season.number,
-          // 保持 title 为 show title, MediaCard 会处理显示 "第 X 季"
         } as ExtendedMedia
         items.push(extendedSeason)
       }

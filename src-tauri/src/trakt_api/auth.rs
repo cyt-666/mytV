@@ -11,7 +11,7 @@ use crate::app_conf::get_config;
 use crate::token::Token;
 use url::Url;
 
-use log::{error, info};
+use log::{error, info, warn};
 
 use crate::db::{DbPool, cache};
 use super::{ApiClient, API, TRAKT_API_HOST, TRAKT_HOST};
@@ -63,7 +63,7 @@ pub async fn get_token(app: AppHandle, code: &str) -> Result<Token, String> {
     info!("Getting Token with code: {}", code);
 
     // 检查是否已有 Token
-    if token_exists(&app).await {
+    if check_login_status(app.clone()).await {
         let token_state = app.try_state::<Mutex<Token>>().unwrap();
         let token = token_state.lock().await;
         info!("Token already exists: {:?}", token);
@@ -213,48 +213,72 @@ pub async fn refresh_token(app: &AppHandle) -> Result<Token, u16> {
     }
 }
 
-async fn token_exists(app: &AppHandle) -> bool {
+// 检查登录状态（核心修复）
+#[command]
+pub async fn check_login_status(app: AppHandle) -> bool {
+    let mut exists_in_db = false;
+    let mut exists_in_mem = false;
+
+    // 1. 检查 DB
     if let Some(pool) = app.try_state::<DbPool>() {
         let token = cache::get_config(&pool.0, "token").await;
         if token.is_some() {
-            return true;
+            exists_in_db = true;
         }
     }
-    false
-}
 
-#[command]
-pub async fn check_login_status(app: AppHandle) -> bool {
-    let exists = token_exists(&app).await;
+    // 2. 检查内存 (setup 中可能已恢复但未写入 DB，或 DB 写入失败)
+    if let Some(token_state) = app.try_state::<Mutex<Token>>() {
+        let token = token_state.lock().await;
+        if !token.access_token.is_empty() {
+            exists_in_mem = true;
+            
+            // 如果内存有但 DB 没有，尝试补救写入 DB (Self-Healing)
+            if !exists_in_db {
+                warn!("Token found in memory but not in DB. Syncing...");
+                let token_json = serde_json::to_value(&*token).ok();
+                drop(token); // 释放锁以便后续操作
+                
+                if let (Some(val), Some(pool)) = (token_json, app.try_state::<DbPool>()) {
+                    let _ = cache::set_config(&pool.0, "token", &val).await;
+                }
+            }
+        }
+    }
 
-    if !exists {
+    if !exists_in_db && !exists_in_mem {
         return false;
     }
 
-    // 检查 token 是否过期
+    // 3. 检查过期并刷新
     let token_state = app.try_state::<Mutex<Token>>();
     if let Some(token_state) = token_state {
         let token = token_state.lock().await;
         if token.is_expired() {
-            println!("Token 已过期，尝试刷新");
+            info!("Token expired, attempting refresh");
             drop(token); // 释放锁
 
             let refresh_result = refresh_token(&app).await;
             if refresh_result.is_ok() {
-                println!("Token 刷新成功");
+                info!("Token refresh successful");
                 return true;
             } else {
-                println!("Token 刷新失败，需要重新登录");
+                warn!("Token refresh failed, login required");
                 // 清除无效 token
                 if let Some(pool) = app.try_state::<DbPool>() {
                     let _ = cache::delete_config(&pool.0, "token").await;
                 }
+                
+                // 也应该清除内存中的 token
+                let mut token = token_state.lock().await;
+                token.access_token = String::new(); // 标记为空
+                
                 return false;
             }
         }
     }
 
-    exists
+    true
 }
 
 #[command]

@@ -9,61 +9,125 @@ use log::{info, error};
 
 #[command]
 pub async fn movie_trending(app: AppHandle) -> Result<Vec<MovieTrending>, u16> {
+    let cache_key = "api_movie_trending";
+    
+    // 1. Check Cache
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<MovieTrending>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.movie.trending.method.as_str(), API.movie.trending.uri.clone(), None, None, None, None, true)
         .await;
-    if let Ok(result) = result {
-        let movie_trending = serde_json::from_value::<Vec<MovieTrending>>(result).unwrap();
-        Ok(movie_trending)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let movie_trending = serde_json::from_value::<Vec<MovieTrending>>(result.clone()).unwrap();
+            
+            // 2. Save Cache
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, cache_key, &result).await;
+            }
+            
+            Ok(movie_trending)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn movie_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<MovieTrending>, u16> {
+    let cache_key = format!("api_movie_trending_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<MovieTrending>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.movie.trending.method.as_str(), API.movie.trending.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let movie_trending = serde_json::from_value::<Vec<MovieTrending>>(result).unwrap();
-        Ok(movie_trending)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let movie_trending = serde_json::from_value::<Vec<MovieTrending>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(movie_trending)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn movie_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Movie>, u16> {
+    let cache_key = format!("api_movie_popular_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<Movie>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.movie.popular.method.as_str(), API.movie.popular.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let movie_popular = serde_json::from_value::<Vec<Movie>>(result).unwrap();
-        Ok(movie_popular)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let movie_popular = serde_json::from_value::<Vec<Movie>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(movie_popular)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn movie_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<MovieAnticipated>, u16> {
+    let cache_key = format!("api_movie_anticipated_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<MovieAnticipated>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.movie.anticipated.method.as_str(), API.movie.anticipated.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let movie_anticipated = serde_json::from_value::<Vec<MovieAnticipated>>(result).unwrap();
-        Ok(movie_anticipated)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let movie_anticipated = serde_json::from_value::<Vec<MovieAnticipated>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(movie_anticipated)
+        }
+        Err(e) => Err(e)
     }
 }
 
@@ -114,10 +178,6 @@ pub async fn movie_details(app: AppHandle, id: u32) -> Result<MovieDetails, u16>
 // 辅助函数：请求并缓存
 async fn fetch_and_cache_movie_details(app: &AppHandle, id: u32) -> Result<MovieDetails, u16> {
     let client = app.state::<Mutex<ApiClient>>();
-    // 注意：这里需要重新获取锁，不能长时间持有
-    // 但 APIClient 是共享的，我们必须 clone 必要的配置而不是持有锁
-    // ApiClient::req_api 是 async 的，会持有锁直到完成，这对并发不利
-    // 更好的做法是重构 ApiClient 支持无锁并发 (使用 Arc<Client>)，目前先保持现状
     let mut client = client.lock().await;
     
     let mut uri = API.movie.details.uri.clone();

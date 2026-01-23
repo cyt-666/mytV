@@ -12,61 +12,121 @@ use log::{info, error};
 
 #[command]
 pub async fn show_trending(app: AppHandle) -> Result<Vec<ShowTrending>, u16> {
+    let cache_key = "api_show_trending";
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<ShowTrending>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, None, None, true)
         .await;
-    if let Ok(result) = result {
-        let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
-        Ok(show_trending)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, cache_key, &result).await;
+            }
+            Ok(show_trending)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowTrending>, u16> {
+    let cache_key = format!("api_show_trending_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<ShowTrending>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
-        Ok(show_trending)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(show_trending)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Show>, u16> {
+    let cache_key = format!("api_show_popular_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<Show>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let show_popular = serde_json::from_value::<Vec<Show>>(result).unwrap();
-        Ok(show_popular)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let show_popular = serde_json::from_value::<Vec<Show>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(show_popular)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn show_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowAnticipated>, u16> {
+    let cache_key = format!("api_show_anticipated_p{}_l{}", page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<ShowAnticipated>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let result = client
         .req_api(&app, API.shows.anticipated.method.as_str(), API.shows.anticipated.uri.clone(), None, None, Some(limit), Some(page), true)
         .await;
-    if let Ok(result) = result {
-        let show_anticipated = serde_json::from_value::<Vec<ShowAnticipated>>(result).unwrap();
-        Ok(show_anticipated)
-    } else {
-        Err(result.unwrap_err())
+        
+    match result {
+        Ok(result) => {
+            let show_anticipated = serde_json::from_value::<Vec<ShowAnticipated>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            Ok(show_anticipated)
+        }
+        Err(e) => Err(e)
     }
 }
 

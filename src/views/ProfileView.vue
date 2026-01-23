@@ -17,8 +17,6 @@
             </a-avatar>
           </div>
           <div class="user-details">
-            <!-- 临时调试：显示图片 URL -->
-            <!-- <div style="font-size: 10px; color: red;">{{ userInfo?.images?.avatar?.full }}</div> -->
             <h1 class="username">{{ userInfo?.username || '用户名' }}</h1>
             <p class="user-bio">
               {{ userInfo?.name || 'Trakt 用户' }} • 
@@ -109,6 +107,7 @@ import {
 import { useAuth } from '../composables/useAuth'
 import { UserStats } from '../types/api'
 import { invoke } from "@tauri-apps/api/core"
+import { useUserDataUpdate } from '../composables/useEvent'
 
 const { userInfo, isLoggedIn } = useAuth()
 
@@ -118,6 +117,19 @@ const isMacOS = navigator.userAgent.includes('Mac OS X')
 
 // 头像 URL 处理
 const avatarUrl = ref<string | null>(null)
+
+// 监听 Stats 更新
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.ids?.slug) return
+  
+  const cacheKey = `stats_${userInfo.value.ids.slug}`
+  if (payload.key === cacheKey) {
+    console.log('收到 Stats 更新')
+    userStats.value = payload.data as UserStats
+    loading.value = false
+    // 统计数据更新通常不需要弹窗打扰
+  }
+})
 
 watch(() => userInfo.value?.images?.avatar?.full, async (url) => {
   if (!url) {
@@ -153,6 +165,7 @@ const fetchUserStats = async () => {
   
   loading.value = true
   try {
+    // SWR 策略
     const stats = await invoke<UserStats>("get_user_stats", { id: userInfo.value.ids.slug })
     userStats.value = stats
   } catch (error) {
@@ -281,4 +294,4 @@ const formatJoinDate = (dateString?: string) => {
     font-size: 24px;
   }
 }
-</style> 
+</style>
