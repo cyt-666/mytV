@@ -231,7 +231,17 @@ const formatTime = (isoString: string) => {
 
 const navigateToEpisode = (item: CalendarShow) => {
   if (item.show.ids?.trakt && item.episode) {
-    router.push(`/show/${item.show.ids.trakt}/season/${item.episode.season}/episode/${item.episode.number}`)
+    router.push({
+      path: `/show/${item.show.ids.trakt}/season/${item.episode.season}/episode/${item.episode.number}`,
+      state: {
+        posterUrl: getPosterUrl(item),
+        // 尝试获取 fanart (backdrop)，如果 CalendarShow 结构里有的话
+        backdropUrl: item.show.images?.fanart?.[0] ? 
+          (item.show.images.fanart[0].startsWith('http') ? item.show.images.fanart[0] : `https://${item.show.images.fanart[0]}`) 
+          : undefined,
+        showTitle: getShowTitle(item) // 把剧名也传过去，防止详情页不知道是哪个剧
+      }
+    })
   }
 }
 

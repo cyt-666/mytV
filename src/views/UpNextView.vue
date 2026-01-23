@@ -89,6 +89,7 @@ import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { IconImage } from '@arco-design/web-vue/es/icon'
 import { useAuth } from '../composables/useAuth'
+import { useUserDataUpdate } from '../composables/useEvent'
 import type { UpNextItem } from '../types/api'
 import { getShowChineseTranslation, type TranslationResult } from '../utils/translation'
 
@@ -103,6 +104,26 @@ const hasMore = ref(true)
 const page = ref(1)
 const upNextItems = ref<UpNextItem[]>([])
 const showTranslations = ref<Map<number, TranslationResult>>(new Map())
+
+useUserDataUpdate((payload) => {
+  if (!userInfo.value?.username) return
+  
+  const expectedKeyPrefix = `up_next_${userInfo.value.username}_p`
+  if (payload.key.startsWith(expectedKeyPrefix)) {
+    const pageNum = parseInt(payload.key.replace(expectedKeyPrefix, ''), 10)
+    const newData = payload.data as UpNextItem[]
+    
+    if (pageNum === 1) {
+      upNextItems.value = newData
+    } else {
+      const startIdx = (pageNum - 1) * 20
+      upNextItems.value.splice(startIdx, newData.length, ...newData)
+    }
+    
+    loadTranslations(newData)
+    console.log(`Up Next 第 ${pageNum} 页已后台刷新，共 ${newData.length} 条`)
+  }
+})
 
 const formatRelativeTime = (time: string | undefined) => {
   if (!time) return ''
@@ -192,12 +213,24 @@ const getShowTitle = (item: UpNextItem) => {
 
 const navigateToEpisode = (item: UpNextItem) => {
   if (!item.show.ids?.trakt) return
+  
+  const posterPath = item.show.images?.poster?.[0]
+  const posterUrl = posterPath ? (posterPath.startsWith('http') ? posterPath : `https://${posterPath}`) : undefined
+  
+  const backdropPath = item.show.images?.fanart?.[0]
+  const backdropUrl = backdropPath ? (backdropPath.startsWith('http') ? backdropPath : `https://${backdropPath}`) : undefined
+
   router.push({
     name: 'episode-detail',
     params: {
       id: String(item.show.ids.trakt),
       season: String(item.next_episode.season),
       episode: String(item.next_episode.number)
+    },
+    state: {
+      posterUrl,
+      backdropUrl,
+      showTitle: getShowTitle(item)
     }
   })
 }

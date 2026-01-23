@@ -23,6 +23,7 @@
           
           <div class="info-wrapper">
             <h1 class="episode-title">
+              <div v-if="fallbackData.showTitle" class="show-name">{{ fallbackData.showTitle }}</div>
               <span class="episode-number">{{ episode.number }}.</span>
               {{ episode.title }}
             </h1>
@@ -54,24 +55,34 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { IconImage, IconStarFill, IconCheck, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
 import type { Episode } from '../types/api'
 
 const route = useRoute()
+const router = useRouter()
 
 const loading = ref(false)
 const error = ref('')
 const episode = ref<Episode | null>(null)
 
+// 从路由状态获取的后备数据
+const fallbackData = ref({
+  showTitle: '',
+  posterUrl: '',
+  backdropUrl: ''
+})
+
 const screenshotUrl = computed(() => {
+  // 1. 优先使用剧集截图
   if (episode.value?.images?.screenshot?.length) {
     const path = episode.value.images.screenshot[0]
     return path.startsWith('http') ? path : `https://${path}`
   }
-  return null
+  // 2. 后备：使用传递过来的背景图或海报
+  return fallbackData.value.backdropUrl || fallbackData.value.posterUrl || null
 })
 
 const formatDate = (dateString: string) => {
@@ -123,6 +134,14 @@ const markWatched = async () => {
 }
 
 onMounted(() => {
+  // 读取路由传递的状态
+  const state = history.state as Record<string, any>
+  if (state) {
+    if (state.showTitle) fallbackData.value.showTitle = state.showTitle
+    if (state.posterUrl) fallbackData.value.posterUrl = state.posterUrl
+    if (state.backdropUrl) fallbackData.value.backdropUrl = state.backdropUrl
+  }
+  
   loadEpisode()
 })
 </script>
@@ -192,6 +211,13 @@ onMounted(() => {
   font-weight: 700;
   margin: 0 0 12px 0;
   color: #1d1d1f;
+}
+
+.show-name {
+  font-size: 16px;
+  color: #86909c;
+  font-weight: 500;
+  margin-bottom: 4px;
 }
 
 .episode-number {
