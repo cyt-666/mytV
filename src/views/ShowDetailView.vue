@@ -44,18 +44,20 @@
               <a-button 
                 type="primary" 
                 size="large" 
-                class="action-btn"
+                :class="['action-btn', { 'is-active': isWatched }]"
+                
                 @click="handleMarkAsWatched"
                 :loading="actionLoading.watched"
+                :status="isWatched ? 'success' : undefined"
               >
-                <icon-play-arrow />
-                标记已观看
+                <icon-check v-if="isWatched" />
+                <icon-play-arrow v-else />
+                {{ isWatched ? '已观看' : '标记已观看' }}
               </a-button>
               <a-button 
                 size="large" 
                 :class="['action-btn', { 'is-active': isInCollection }]"
                 :type="isInCollection ? 'primary' : 'secondary'"
-                :status="isInCollection ? 'success' : undefined"
                 @click="handleToggleCollection"
                 :loading="actionLoading.collection"
               >
@@ -256,7 +258,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
   IconImage, IconStarFill, IconPlayArrow, IconHeart,
-  IconBookmark, IconExclamationCircle, IconLink
+  IconBookmark, IconExclamationCircle, IconLink, IconCheck
 } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import { invoke } from "@tauri-apps/api/core"
@@ -279,6 +281,7 @@ const seasonTranslations = ref<Map<number, TranslationResult>>(new Map())
 
 const isInCollection = ref(false)
 const isInWatchlist = ref(false)
+const isWatched = ref(false)
 const actionLoading = ref({
   collection: false,
   watchlist: false,
@@ -571,6 +574,7 @@ const handleMarkAsWatched = async () => {
       mediaType: 'show',
       traktId: showDetails.value.ids.trakt
     })
+    isWatched.value = true
     Message.success('已标记为观看')
   } catch (error) {
     console.error('标记观看失败:', error)
@@ -658,10 +662,11 @@ const checkUserStatus = async () => {
     const numericId = typeof showId === 'string' ? parseInt(showId, 10) : Number(showId)
     if (isNaN(numericId)) return
     
-    // 并行获取用户的 watchlist 和 collection
-    const [watchlistResult, collectionResult] = await Promise.allSettled([
+    // 并行获取用户的 watchlist, collection 和 watched history
+    const [watchlistResult, collectionResult, watchedResult] = await Promise.allSettled([
       invoke<any[]>('get_watchlist', { id: 'me', selectType: 'shows' }),
-      invoke<any[]>('get_collection', { id: 'me', selectType: 'shows' })
+      invoke<any[]>('get_collection', { id: 'me', selectType: 'shows' }),
+      invoke<any[]>('get_watched', { id: 'me', selectType: 'shows', noSeason: true })
     ])
     
     // 检查是否在 watchlist 中
@@ -677,8 +682,19 @@ const checkUserStatus = async () => {
         (item: any) => item.show?.ids?.trakt === numericId
       )
     }
+
+    // 检查是否在 watched history 中
+    if (watchedResult.status === 'fulfilled' && watchedResult.value) {
+      isWatched.value = watchedResult.value.some(
+        (item: any) => item.show?.ids?.trakt === numericId
+      )
+    }
     
-    console.log('用户状态检查完成:', { isInWatchlist: isInWatchlist.value, isInCollection: isInCollection.value })
+    console.log('用户状态检查完成:', { 
+      isInWatchlist: isInWatchlist.value, 
+      isInCollection: isInCollection.value,
+      isWatched: isWatched.value
+    })
   } catch (error) {
     console.error('检查用户状态失败:', error)
   }
