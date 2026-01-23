@@ -674,7 +674,7 @@ const loadTrendingSubTabData = async (subTab: string) => {
   }
 }
 
-const loadTrendingMoviesData = async () => {
+const loadTrendingMoviesData = async (retryCount = 0) => {
   if (loading.value.trendingMovies || dataLoaded.value.trendingMovies) return
 
   loading.value.trendingMovies = true
@@ -728,7 +728,7 @@ const loadTrendingMoviesData = async () => {
   }
 }
 
-const loadTrendingShowsData = async () => {
+const loadTrendingShowsData = async (retryCount = 0) => {
   if (loading.value.trendingShows || dataLoaded.value.trendingShows) return
 
   loading.value.trendingShows = true
