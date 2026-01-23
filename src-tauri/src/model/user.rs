@@ -200,4 +200,4 @@ pub struct RatingDistribution {
     pub nine: u32,
     #[serde(rename = "10")]
     pub ten: u32,
-} 
+}

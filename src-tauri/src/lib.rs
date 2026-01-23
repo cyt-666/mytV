@@ -1,14 +1,15 @@
+mod db;
 mod app_conf;
-mod token;
-mod trakt_api;
 mod model;
 mod settings;
+mod token;
+mod trakt_api;
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 use token::Token;
 use tokio::sync::Mutex;
 use trakt_api::ApiClient;
-
+use db::cache;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,14 +23,17 @@ pub fn run() {
     };
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new()
-            .level(log_level)
-            .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
-            .build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log_level)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .build(),
+        )
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_oauth::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_sql::Builder::default().add_migrations("sqlite:mytv.db", crate::db::get_migrations()).build())
         .invoke_handler(tauri::generate_handler![
             trakt_api::auth::start_trakt_user_auth,
             trakt_api::auth::get_token,
@@ -83,20 +87,64 @@ pub fn run() {
             settings::get_app_config,
             settings::update_log_level
         ])
-        .setup(|app|{
-            let store = app.store("app_data.json");
-            if let Ok(store) = store {
-                if store.has("token") {
-                    let token = store.get("token").unwrap();
-                    let token = serde_json::from_value::<Token>(token);
-                    match token {
-                        Ok(token) => {
-                            app.manage(Mutex::new(token));
+        .setup(|app| {
+            // 初始化后端使用的 DB pool
+            let pool = tauri::async_runtime::block_on(async {
+                match db::init_db_pool(&app.handle()).await {
+                    Ok(pool) => {
+                        app.manage(db::DbPool(pool.clone()));
+                        log::info!("Backend DB pool initialized");
+                        Some(pool)
+                    }
+                    Err(e) => {
+                        log::error!("Failed to init backend DB pool: {}", e);
+                        None
+                    }
+                }
+            });
+            
+            // 尝试从 DB 恢复 Token
+            let mut token_recovered = false;
+            if let Some(ref pool) = pool {
+                let token_res = tauri::async_runtime::block_on(async {
+                    cache::get_config(pool, "token").await
+                });
+                
+                if let Some(token_val) = token_res {
+                     if let Ok(token) = serde_json::from_value::<Token>(token_val) {
+                         app.manage(Mutex::new(token));
+                         token_recovered = true;
+                         log::info!("Token recovered from DB");
+                     }
+                }
+            }
+
+            // 降级：如果 DB 中没有，尝试从旧的 app_data.json 恢复 (迁移逻辑)
+            if !token_recovered {
+                let store = app.store("app_data.json");
+                if let Ok(store) = store {
+                    if store.has("token") {
+                        let token_val = store.get("token").unwrap();
+                        let token_res = serde_json::from_value::<Token>(token_val.clone());
+                        match token_res {
+                            Ok(token) => {
+                                app.manage(Mutex::new(token));
+                                log::info!("Token recovered from app_data.json");
+                                
+                                // 立即迁移到 DB
+                                if let Some(ref pool) = pool {
+                                    let _ = tauri::async_runtime::block_on(async {
+                                        let _ = cache::set_config(pool, "token", &token_val).await;
+                                        log::info!("Token migrated to DB");
+                                    });
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
             }
+            
             let client = ApiClient::new(&app.handle());
             app.manage(Mutex::new(client));
 
@@ -104,7 +152,7 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_decorations(false);
             }
-            
+
             Ok(())
         })
         .run(tauri::generate_context!())

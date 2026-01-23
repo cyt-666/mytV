@@ -1,20 +1,217 @@
-use crate::trakt_api::ApiClient;
-use tauri::{command, AppHandle, Manager};
-use crate::trakt_api::API;
-use crate::model::shows::{ShowTrending, ShowAnticipated, Show, ShowDetails, ShowTranslations, Seasons, SeasonTranslations, Episode};
+use crate::model::shows::{
+    Season, SeasonTranslations, Show, ShowAnticipated, ShowDetails, ShowTrending, ShowTranslations,
+    Episode,
+};
+use tauri::command;
+use crate::trakt_api::{ApiClient, API};
+use tauri::{AppHandle, Manager, Emitter};
 use tokio::sync::Mutex;
+use std::collections::HashMap;
+use crate::db::{DbPool, cache};
+use log::{info, error};
+
+#[command]
+pub async fn show_trending(app: AppHandle) -> Result<Vec<ShowTrending>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client
+        .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, None, None, true)
+        .await;
+    if let Ok(result) = result {
+        let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
+        Ok(show_trending)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowTrending>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client
+        .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, Some(limit), Some(page), true)
+        .await;
+    if let Ok(result) = result {
+        let show_trending = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
+        Ok(show_trending)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Show>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client
+        .req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true)
+        .await;
+    if let Ok(result) = result {
+        let show_popular = serde_json::from_value::<Vec<Show>>(result).unwrap();
+        Ok(show_popular)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowAnticipated>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let result = client
+        .req_api(&app, API.shows.anticipated.method.as_str(), API.shows.anticipated.uri.clone(), None, None, Some(limit), Some(page), true)
+        .await;
+    if let Ok(result) = result {
+        let show_anticipated = serde_json::from_value::<Vec<ShowAnticipated>>(result).unwrap();
+        Ok(show_anticipated)
+    } else {
+        Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_details(app: AppHandle, id: u32) -> Result<ShowDetails, u16> {
+    let mut cache_data = None;
+    let mut should_fetch = true;
+
+    // 1. 尝试从缓存获取
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(result) = cache::get_media_cache(&pool.0, "show", id).await {
+            if let Ok(details) = serde_json::from_value::<ShowDetails>(result.data) {
+                cache_data = Some(details);
+                should_fetch = result.is_stale;
+            }
+        }
+    }
+
+    if let Some(data) = cache_data.clone() {
+        if !should_fetch {
+            return Ok(data);
+        }
+        
+        // SWR
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            match fetch_and_cache_show_details(&app_clone, id).await {
+                Ok(new_data) => {
+                    info!("Background update success for show {}", id);
+                    let _ = app_clone.emit("media-update", serde_json::json!({
+                        "type": "show",
+                        "id": id,
+                        "data": new_data
+                    }));
+                },
+                Err(e) => error!("Background update failed for show {}: {}", id, e),
+            }
+        });
+        
+        return Ok(data);
+    }
+
+    fetch_and_cache_show_details(&app, id).await
+}
+
+async fn fetch_and_cache_show_details(app: &AppHandle, id: u32) -> Result<ShowDetails, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let mut uri = API.shows.details.uri.clone();
+    uri = uri.replace("id", &id.to_string());
+    
+    let mut params = HashMap::new();
+    params.insert("extended".to_string(), "full".to_string());
+    
+    let result = client.req_api(app, API.shows.details.method.as_str(), uri, Some(params), None, None, None, true).await;
+    
+    match result {
+        Ok(result) => {
+            let show_details = serde_json::from_value::<ShowDetails>(result.clone()).unwrap();
+            
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_media_cache(&pool.0, "show", id, &result, cache::CACHE_TTL_SHORT).await;
+            }
+            
+            Ok(show_details)
+        }
+        Err(e) => Err(e)
+    }
+}
+
+#[command]
+pub async fn show_seasons(app: AppHandle, id: u32) -> Result<Vec<Season>, u16> {
+    // 季度列表同样适用 SWR，因为可能会有新季度或者新集数信息
+    let mut cache_data = None;
+    let mut should_fetch = true;
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(result) = cache::get_media_cache(&pool.0, "show_seasons", id).await {
+            if let Ok(seasons) = serde_json::from_value::<Vec<Season>>(result.data) {
+                cache_data = Some(seasons);
+                should_fetch = result.is_stale;
+            }
+        }
+    }
+
+    if let Some(data) = cache_data {
+        if !should_fetch {
+            return Ok(data);
+        }
+        
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            match fetch_and_cache_show_seasons(&app_clone, id).await {
+                Ok(new_data) => {
+                    info!("Background update success for seasons of show {}", id);
+                    let _ = app_clone.emit("media-update", serde_json::json!({
+                        "type": "seasons",
+                        "id": id,
+                        "data": new_data
+                    }));
+                },
+                Err(e) => error!("Background update failed for seasons of show {}: {}", id, e),
+            }
+        });
+        
+        return Ok(data);
+    }
+
+    fetch_and_cache_show_seasons(&app, id).await
+}
+
+async fn fetch_and_cache_show_seasons(app: &AppHandle, id: u32) -> Result<Vec<Season>, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let mut uri = API.shows.seasons.uri.clone();
+    uri = uri.replace("id", &id.to_string());
+    
+    let mut params = HashMap::new();
+    params.insert("extended".to_string(), "full".to_string());
+    
+    let result = client.req_api(app, API.shows.seasons.method.as_str(), uri, Some(params), None, None, None, true).await;
+    
+    match result {
+        Ok(result) => {
+            let seasons = serde_json::from_value::<Vec<Season>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_media_cache(&pool.0, "show_seasons", id, &result, cache::CACHE_TTL_SHORT).await;
+            }
+            Ok(seasons)
+        }
+        Err(e) => Err(e)
+    }
+}
 
 #[command]
 pub async fn get_season_episodes(app: AppHandle, id: u32, season: u32) -> Result<Vec<Episode>, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.season_episodes.uri.clone();
-    uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string());
+    uri = uri.replace("id", &id.to_string()).replace("season", &season.to_string());
     
-    let mut params = API.shows.season_episodes.params.clone().unwrap_or_default();
-    params.insert("extended".to_string(), "full,images".to_string());
+    let mut params = HashMap::new();
+    params.insert("extended".to_string(), "full".to_string());
     
-    let result = client.req_api(&app, API.shows.season_episodes.method.as_str(), uri, Some(params), None, None, None, false).await;
+    let result = client.req_api(&app, API.shows.season_episodes.method.as_str(), uri, Some(params), None, None, None, true).await;
     if let Ok(result) = result {
         let episodes = serde_json::from_value::<Vec<Episode>>(result).unwrap();
         Ok(episodes)
@@ -28,85 +225,18 @@ pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.episode_details.uri.clone();
-    uri = uri.replace("id", &id.to_string())
-             .replace("season_number", &season.to_string())
-             .replace("episode_number", &episode.to_string());
-             
-    let mut params = API.shows.episode_details.params.clone().unwrap_or_default();
-    params.insert("extended".to_string(), "full,images".to_string());
-    
-    let result = client.req_api(&app, API.shows.episode_details.method.as_str(), uri, Some(params), None, None, None, false).await;
-    if let Ok(result) = result {
-        let episode_data = serde_json::from_value::<Episode>(result).unwrap();
-        Ok(episode_data)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
+    uri = uri
+        .replace("id", &id.to_string())
+        .replace("season", &season.to_string())
+        .replace("episode", &episode.to_string());
+        
+    let mut params = HashMap::new();
+    params.insert("extended".to_string(), "full".to_string());
 
-#[command]
-pub async fn show_trending(app: AppHandle) -> Result<Vec<ShowTrending>, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let result = client.req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, Some(40), Some(1), true).await;
+    let result = client.req_api(&app, API.shows.episode_details.method.as_str(), uri, Some(params), None, None, None, true).await;
     if let Ok(result) = result {
-        let shows = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
-        Ok(shows)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
-
-#[command]
-pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowTrending>, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let result = client.req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, Some(limit), Some(page), true).await;
-    if let Ok(result) = result {
-        let shows = serde_json::from_value::<Vec<ShowTrending>>(result).unwrap();
-        Ok(shows)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
-
-#[command]
-pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Show>, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let result = client.req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true).await;
-    if let Ok(result) = result {
-        let shows = serde_json::from_value::<Vec<Show>>(result).unwrap();
-        Ok(shows)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
-
-#[command]
-pub async fn show_anticipated(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowAnticipated>, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let result = client.req_api(&app, API.shows.anticipated.method.as_str(), API.shows.anticipated.uri.clone(), None, None, Some(limit), Some(page), true).await;
-    if let Ok(result) = result {
-        let shows = serde_json::from_value::<Vec<ShowAnticipated>>(result).unwrap();
-        Ok(shows)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
-
-#[command]
-pub async fn show_details(app: AppHandle, id: u32) -> Result<ShowDetails, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let mut uri = API.shows.details.uri.clone();
-    uri = uri.replace("id", &id.to_string());
-    let params = API.shows.details.params.clone();
-    let result = client.req_api(&app, API.shows.details.method.as_str(), uri, params, None, None, None, false).await;
-    if let Ok(result) = result {
-        let show = serde_json::from_value::<ShowDetails>(result).unwrap();
-        Ok(show)
+        let episode_details = serde_json::from_value::<Episode>(result).unwrap();
+        Ok(episode_details)
     } else {
         Err(result.unwrap_err())
     }
@@ -118,46 +248,27 @@ pub async fn show_translation(app: AppHandle, id: u32, language: String) -> Resu
     let mut client = client.lock().await;
     let mut uri = API.shows.trans.uri.clone();
     uri = uri.replace("id", &id.to_string()).replace("language", &language);
-    let result = client.req_api(&app, API.shows.trans.method.as_str(), uri, None, None, None, None, false).await;
+    let result = client.req_api(&app, API.shows.trans.method.as_str(), uri, None, None, None, None, true).await;
     if let Ok(result) = result {
-        let show = serde_json::from_value::<ShowTranslations>(result).unwrap();
-        Ok(show)
+        let show_translations = serde_json::from_value::<ShowTranslations>(result).unwrap();
+        Ok(show_translations)
     } else {
         Err(result.unwrap_err())
     }
 }
-
-#[command]
-pub async fn show_seasons(app: AppHandle, id: u32) -> Result<Seasons, u16> {
-    let client = app.state::<Mutex<ApiClient>>();
-    let mut client = client.lock().await;
-    let mut uri = API.shows.seasons.uri.clone();
-    uri = uri.replace("id", &id.to_string());
-    let params = API.shows.seasons.params.clone();
-    let result = client.req_api(&app, API.shows.seasons.method.as_str(), uri, params, None, None, None, false).await;
-    if let Ok(result) = result {
-        let seasons = serde_json::from_value::<Seasons>(result).unwrap();
-        Ok(seasons)
-    } else {
-        Err(result.unwrap_err())
-    }
-}
-
 
 #[command]
 pub async fn season_trans(app: AppHandle, id: u32, season: u32, language: String) -> Result<SeasonTranslations, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.season_trans.uri.clone();
-    uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string()).replace("language", &language);
-    let result = client.req_api(&app, API.shows.season_trans.method.as_str(), uri, None, None, None, None, false).await;
+    uri = uri.replace("id", &id.to_string()).replace("season", &season.to_string()).replace("language", &language);
+    
+    let result = client.req_api(&app, API.shows.season_trans.method.as_str(), uri, None, None, None, None, true).await;
     if let Ok(result) = result {
-        let season = serde_json::from_value::<SeasonTranslations>(result).unwrap();
-        Ok(season)
+        let translations = serde_json::from_value::<SeasonTranslations>(result).unwrap();
+        Ok(translations)
     } else {
         Err(result.unwrap_err())
     }
 }
-
-
-

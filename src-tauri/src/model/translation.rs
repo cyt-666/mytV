@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TranslationData {
@@ -21,20 +21,20 @@ impl TranslationCacheItem {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
-        
+
         Self {
             data,
             updated_at: now,
             expires_at: now + cache_duration_ms,
         }
     }
-    
+
     pub fn is_expired(&self) -> bool {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
-        
+
         now > self.expires_at
     }
-} 
+}

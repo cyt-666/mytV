@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::model::assets::Images;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ShowTrending {
@@ -19,9 +19,8 @@ pub struct Show {
     pub year: Option<u32>,
     pub ids: ShowIds,
     #[serde(default)]
-    pub images: Images
+    pub images: Images,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ShowIds {
@@ -104,8 +103,6 @@ pub struct SeasonIds {
 
 // 季度列表的类型别名
 pub type Seasons = Vec<Season>;
-
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SeasonTranslation {

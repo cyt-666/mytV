@@ -9,11 +9,11 @@ use tauri_plugin_opener::open_url;
 
 use crate::app_conf::get_config;
 use crate::token::Token;
-use tauri_plugin_store::StoreExt;
 use url::Url;
 
-use log::{info, error};
+use log::{error, info};
 
+use crate::db::{DbPool, cache};
 use super::{ApiClient, API, TRAKT_API_HOST, TRAKT_HOST};
 
 #[command]
@@ -30,7 +30,7 @@ pub async fn start_trakt_user_auth(app: AppHandle) -> Result<(), u16> {
     let mut url = Url::parse(format!("{}{}", TRAKT_HOST, API.auth.authorize.uri).as_str()).unwrap();
     url.query_pairs_mut()
         .append_pair("client_id", &get_config().client_id);
-    
+
     let conf_redirect = &get_config().redirect_uri;
     let final_redirect_uri = if conf_redirect.starts_with("http") {
         conf_redirect.clone()
@@ -41,11 +41,12 @@ pub async fn start_trakt_user_auth(app: AppHandle) -> Result<(), u16> {
             conf_redirect
         )
     };
-    
+
     info!("Redirect URI: {}", final_redirect_uri);
-    
-    url.query_pairs_mut().append_pair("redirect_uri", &final_redirect_uri);
-    
+
+    url.query_pairs_mut()
+        .append_pair("redirect_uri", &final_redirect_uri);
+
     url.query_pairs_mut().append_pair("response_type", "code");
     let url = url.to_string();
     info!("Opening URL: {}", url);
@@ -60,9 +61,9 @@ pub async fn start_trakt_user_auth(app: AppHandle) -> Result<(), u16> {
 #[command]
 pub async fn get_token(app: AppHandle, code: &str) -> Result<Token, String> {
     info!("Getting Token with code: {}", code);
-    
+
     // 检查是否已有 Token
-    if token_exists(&app) {
+    if token_exists(&app).await {
         let token_state = app.try_state::<Mutex<Token>>().unwrap();
         let token = token_state.lock().await;
         info!("Token already exists: {:?}", token);
@@ -71,23 +72,26 @@ pub async fn get_token(app: AppHandle, code: &str) -> Result<Token, String> {
 
     let get_token_api = API.auth.get_token.clone();
     let url = format!("{}{}", TRAKT_API_HOST, get_token_api.uri);
-    
+
     let mut request_body = get_token_api.body.unwrap();
 
     let conf = get_config();
     request_body["client_id"] = conf.client_id.clone().into();
     request_body["client_secret"] = conf.client_secret.clone().into();
-    
+
     let redirect_uri_str = if conf.redirect_uri.starts_with("http") {
         conf.redirect_uri.clone()
     } else {
         format!("http://localhost:{}{}", conf.oauth_port, conf.redirect_uri)
     };
-    
+
     request_body["redirect_uri"] = redirect_uri_str.clone().into();
     request_body["code"] = code.to_string().into();
 
-    info!("Token Request URI: {}, Redirect URI: {}", url, redirect_uri_str);
+    info!(
+        "Token Request URI: {}, Redirect URI: {}",
+        url, redirect_uri_str
+    );
 
     let client = if let Some(client) = app.try_state::<Mutex<ApiClient>>() {
         client
@@ -99,16 +103,30 @@ pub async fn get_token(app: AppHandle, code: &str) -> Result<Token, String> {
 
     let resp_body: Result<Value, u16> = {
         let mut client = client.lock().await;
-        client.req_api(&app, "POST", url, None, Some(request_body), None, None, false).await
-    }; 
-    
+        client
+            .req_api(
+                &app,
+                "POST",
+                url,
+                None,
+                Some(request_body),
+                None,
+                None,
+                false,
+            )
+            .await
+    };
+
     if let Ok(resp_body) = resp_body {
         info!("Token Response OK");
         let new_token = serde_json::from_value::<Token>(resp_body);
         match new_token {
             Ok(new_token) => {
-                let store = app.store("app_data.json").unwrap();
-                store.set("token", serde_json::to_value(&new_token).unwrap());
+                // 保存到 DB
+                if let Some(pool) = app.try_state::<DbPool>() {
+                    let _ = cache::set_config(&pool.0, "token", &serde_json::to_value(&new_token).unwrap()).await;
+                }
+                
                 if let Some(token) = app.try_state::<Mutex<Token>>() {
                     {
                         let mut token = token.lock().await;
@@ -148,7 +166,7 @@ pub async fn refresh_token(app: &AppHandle) -> Result<Token, u16> {
     }
     let token = token.unwrap();
     let mut token = token.lock().await;
-    
+
     let conf = get_config();
     let redirect_uri_str = if conf.redirect_uri.starts_with("http") {
         conf.redirect_uri.clone()
@@ -183,34 +201,36 @@ pub async fn refresh_token(app: &AppHandle) -> Result<Token, u16> {
             token.token_type = new_token.token_type.clone();
             token.expires_in = new_token.expires_in;
             token.scope = new_token.scope.clone();
-            let store = app.store("app_data.json").unwrap();
-            let _ = store.delete("token");
-            let _ = store.set("token", serde_json::to_value(&new_token).unwrap());
+            
+            // 保存到 DB
+            if let Some(pool) = app.try_state::<DbPool>() {
+                let _ = cache::set_config(&pool.0, "token", &serde_json::to_value(&new_token).unwrap()).await;
+            }
+            
             Ok(new_token)
         }
-        Err(_) => {
-            Err(500)
-        }
+        Err(_) => Err(500),
     }
 }
 
-fn token_exists(app: &AppHandle) -> bool {
-    let store = app.store("app_data.json").unwrap();
-    let token = store.get("token");
-    if token.is_some() {
-        return true;
+async fn token_exists(app: &AppHandle) -> bool {
+    if let Some(pool) = app.try_state::<DbPool>() {
+        let token = cache::get_config(&pool.0, "token").await;
+        if token.is_some() {
+            return true;
+        }
     }
     false
 }
 
 #[command]
 pub async fn check_login_status(app: AppHandle) -> bool {
-    let exists = token_exists(&app);
-    
+    let exists = token_exists(&app).await;
+
     if !exists {
         return false;
     }
-    
+
     // 检查 token 是否过期
     let token_state = app.try_state::<Mutex<Token>>();
     if let Some(token_state) = token_state {
@@ -218,7 +238,7 @@ pub async fn check_login_status(app: AppHandle) -> bool {
         if token.is_expired() {
             println!("Token 已过期，尝试刷新");
             drop(token); // 释放锁
-            
+
             let refresh_result = refresh_token(&app).await;
             if refresh_result.is_ok() {
                 println!("Token 刷新成功");
@@ -226,13 +246,14 @@ pub async fn check_login_status(app: AppHandle) -> bool {
             } else {
                 println!("Token 刷新失败，需要重新登录");
                 // 清除无效 token
-                let store = app.store("app_data.json").unwrap();
-                let _ = store.delete("token");
+                if let Some(pool) = app.try_state::<DbPool>() {
+                    let _ = cache::delete_config(&pool.0, "token").await;
+                }
                 return false;
             }
         }
     }
-    
+
     exists
 }
 
@@ -241,13 +262,13 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
     let token_state = app.try_state::<Mutex<Token>>();
     if let Some(token_state) = token_state {
         let token = token_state.lock().await;
-        
+
         // 调用API撤销token
         let mut revoke_body = API.auth.revoke_token.body.clone().unwrap();
         revoke_body["token"] = token.access_token.clone().into();
         revoke_body["client_id"] = get_config().client_id.clone().into();
         revoke_body["client_secret"] = get_config().client_secret.clone().into();
-        
+
         let result = reqwest::Client::new()
             .post(format!("{}{}", TRAKT_API_HOST, API.auth.revoke_token.uri))
             .header("Content-Type", "application/json")
@@ -255,11 +276,12 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
             .body(serde_json::to_string(&revoke_body).unwrap())
             .send()
             .await;
-            
+
         // 无论API调用是否成功，都清除本地token
-        let store = app.store("app_data.json").unwrap();
-        let _ = store.delete("token");
-        
+        if let Some(pool) = app.try_state::<DbPool>() {
+            let _ = cache::delete_config(&pool.0, "token").await;
+        }
+
         // 从应用状态中移除token
         drop(token); // 释放锁
         let _ = app.state::<Mutex<Token>>().try_lock().map(|mut t| {
@@ -272,14 +294,14 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
                 created_at: 0,
             };
         });
-        
+
         // 重置 ApiClient 的认证状态
         if let Some(client_state) = app.try_state::<Mutex<ApiClient>>() {
             if let Ok(mut client) = client_state.try_lock() {
                 client.refresh_client(None);
             }
         }
-        
+
         match result {
             Ok(response) => {
                 if response.status().is_success() {
@@ -288,14 +310,14 @@ pub async fn revoke_token(app: AppHandle) -> Result<(), String> {
                     Ok(()) // 即使API失败也算成功，因为本地已清除
                 }
             }
-            Err(_) => Ok(()) // 即使网络失败也算成功，因为本地已清除
+            Err(_) => Ok(()), // 即使网络失败也算成功，因为本地已清除
         }
     } else {
         Ok(()) // 没有token也算成功
     }
 }
 
-const web_page: &str = "<!DOCTYPE html>
+const WEB_PAGE: &str = "<!DOCTYPE html>
 <html lang=\"zh\">
 <head>
     <meta charset=\"UTF-8\">
@@ -340,14 +362,10 @@ const web_page: &str = "<!DOCTYPE html>
 </body>
 </html>";
 
-async fn handle_oauth_callback(
-    red_url: String,
-    port: u16,
-    app: AppHandle,
-) -> Result<(), u16> {
+async fn handle_oauth_callback(red_url: String, port: u16, app: AppHandle) -> Result<(), u16> {
     let config = OauthConfig {
         ports: Some(vec![port]),
-        response: Some(web_page.into()),
+        response: Some(WEB_PAGE.into()),
     };
 
     let _ = start_with_config(config, move |url| {
@@ -356,7 +374,7 @@ async fn handle_oauth_callback(
         if let Ok(url_instance) = url_instance {
             let request_path = url_instance.path();
             let app_conf = get_config();
-            
+
             let is_match = if app_conf.redirect_uri.starts_with("http") {
                 if let Ok(conf_url) = Url::parse(&app_conf.redirect_uri) {
                     conf_url.path() == request_path
@@ -367,7 +385,10 @@ async fn handle_oauth_callback(
                 request_path == app_conf.redirect_uri
             };
 
-            info!("Callback match: {} (Request: {}, Config: {})", is_match, request_path, app_conf.redirect_uri);
+            info!(
+                "Callback match: {} (Request: {}, Config: {})",
+                is_match, request_path, app_conf.redirect_uri
+            );
 
             if is_match {
                 let code = url_instance.query_pairs().find(|(key, _)| key == "code");

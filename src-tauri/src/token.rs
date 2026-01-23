@@ -17,7 +17,7 @@ impl Token {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let expires_at = self.created_at + self.expires_in as u64;
         now >= expires_at
     }

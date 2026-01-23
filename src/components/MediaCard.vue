@@ -63,11 +63,16 @@ import {
   IconPlayCircle, IconClockCircle
 } from '@arco-design/web-vue/es/icon'
 import type { Movie, Show } from '../types/api'
-import { loadMovieTranslationAsync, loadShowTranslationAsync, type TranslationResult } from '../utils/translation'
+import { 
+  loadMovieTranslationAsync, 
+  loadShowTranslationAsync, 
+  loadSeasonTranslationAsync,
+  type TranslationResult 
+} from '../utils/translation'
 
 interface Props {
   media: Movie | Show
-  type: 'movie' | 'show'
+  type: 'movie' | 'show' | 'season'
   watchedStatus?: 'watched' | 'watching' | 'planned'
   showMeta?: boolean
   watchCount?: number
@@ -102,6 +107,11 @@ const displayYear = computed(() => {
     if (show.latestSeason && show.latestSeason > 1) {
       return `第${show.latestSeason}季`
     }
+  } else if (props.type === 'season') {
+    const seasonNumber = (props.media as any).season_number
+    if (seasonNumber !== undefined) {
+      return `第 ${seasonNumber} 季`
+    }
   }
   return props.media.year
 })
@@ -116,21 +126,38 @@ const posterUrl = computed(() => {
 
 // 方法
 const handleClick = () => {
-  const routeName = props.type === 'movie' ? 'movie-detail' : 'show-detail'
-  // 优先使用 trakt ID（数字），因为后端API需要u32类型
+  let routeName = ''
+  let params: any = {}
   const id = props.media.ids?.trakt || props.media.ids?.slug
+
+  if (!id) {
+    console.error('无法跳转：缺少有效的ID', props.media)
+    return
+  }
+
+  if (props.type === 'movie') {
+    routeName = 'movie-detail'
+    params = { id }
+  } else if (props.type === 'show') {
+    routeName = 'show-detail'
+    params = { id }
+  } else if (props.type === 'season') {
+    routeName = 'season-detail'
+    const seasonNumber = (props.media as any).season_number
+    if (seasonNumber === undefined) {
+      console.error('无法跳转：缺少season_number', props.media)
+      return
+    }
+    params = { id, season: seasonNumber }
+  }
   
   console.log('MediaCard clicked:', { 
     type: props.type, 
     title: props.media.title, 
     ids: props.media.ids,
-    id 
+    id,
+    params
   })
-  
-  if (!id) {
-    console.error('无法跳转：缺少有效的ID', props.media)
-    return
-  }
   
   // 将图片信息存储到sessionStorage供详情页使用
   if (props.media.images) {
@@ -140,7 +167,7 @@ const handleClick = () => {
   
   router.push({
     name: routeName,
-    params: { id }
+    params
   })
 }
 
@@ -178,6 +205,17 @@ const loadTranslation = async () => {
         translation.value = translationData
         translationLoading.value = false
       })
+    } else if (props.type === 'season') {
+      const showId = props.media.ids?.trakt
+      const seasonNumber = (props.media as any).season_number
+      if (showId && seasonNumber !== undefined) {
+        loadSeasonTranslationAsync(showId, seasonNumber, (translationData: TranslationResult | null) => {
+          translation.value = translationData
+          translationLoading.value = false
+        })
+      } else {
+        translationLoading.value = false
+      }
     } else {
       // 对于其他类型，直接关闭加载状态
       translationLoading.value = false

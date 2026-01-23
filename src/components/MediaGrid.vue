@@ -74,7 +74,7 @@ interface Props {
   showMeta?: boolean
   emptyMessage?: string
   infiniteScroll?: boolean
-  mediaType?: 'movie' | 'show' | 'auto'
+  mediaType?: 'movie' | 'show' | 'season' | 'auto'
 }
 
 interface Emits {
@@ -98,10 +98,13 @@ let observer: IntersectionObserver | null = null
 
 // 计算属性
 const getItemKey = (item: Movie | Show) => {
+  if ('media_type' in item && item.media_type === 'season' && 'season_number' in item) {
+    return `${item.ids?.trakt}_S${(item as any).season_number}`
+  }
   return item.ids?.trakt || item.ids?.slug || item.title
 }
 
-const getItemType = (item: Movie | Show): 'movie' | 'show' => {
+const getItemType = (item: Movie | Show): 'movie' | 'show' | 'season' => {
   // 如果明确指定了类型，直接使用
   if (props.mediaType !== 'auto') {
     return props.mediaType
@@ -110,7 +113,7 @@ const getItemType = (item: Movie | Show): 'movie' | 'show' => {
   // 自动推断逻辑
   // 0. 检查显式的 media_type 属性
   if ('media_type' in item && item.media_type) {
-    return item.media_type
+    return item.media_type as 'movie' | 'show' | 'season'
   }
 
   // 1. 检查是否有电影特有的属性

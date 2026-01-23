@@ -1,6 +1,6 @@
-pub mod recommand;
-pub mod user;
-pub mod movie;
-pub mod shows;
 pub mod assets;
-pub mod translation; 
+pub mod movie;
+pub mod recommand;
+pub mod shows;
+pub mod translation;
+pub mod user;

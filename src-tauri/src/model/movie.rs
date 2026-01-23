@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::model::assets::Images;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MovieTrending {
@@ -13,18 +13,17 @@ pub struct MovieAnticipated {
     pub movie: Movie,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Movie {
     pub title: String,
     pub year: Option<u32>,
     pub ids: MovieIds,
     #[serde(default)]
-    pub images: Images
+    pub images: Images,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MovieIds{
+pub struct MovieIds {
     pub trakt: u32,
     pub slug: String,
     pub imdb: Option<String>,
@@ -66,5 +65,3 @@ pub struct MovieTranslation {
 
 // 电影翻译信息列表的类型别名
 pub type MovieTranslations = Vec<MovieTranslation>;
-
-

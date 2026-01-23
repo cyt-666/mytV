@@ -457,3 +457,31 @@ export async function preloadMovieTranslations(
     }
   }
 } 
+/**
+ * 为季度异步加载翻译（不阻塞渲染）
+ * @param showId 电视剧ID
+ * @param seasonNumber 季度编号
+ * @param onTranslationLoaded 翻译加载完成的回调
+ */
+export async function loadSeasonTranslationAsync(
+  showId: number,
+  seasonNumber: number,
+  onTranslationLoaded: (translation: TranslationResult | null) => void
+) {
+  if (!showId) return
+  
+  const cacheKey = `season_${showId}_${seasonNumber}`
+  
+  // 立即检查缓存
+  if (memoryCache.has(cacheKey)) {
+    const cached = memoryCache.get(cacheKey) ?? null
+    onTranslationLoaded(cached)
+    return
+  }
+  
+  // 异步加载翻译
+  setTimeout(async () => {
+    const translation = await getSeasonChineseTranslation(showId, seasonNumber)
+    onTranslationLoaded(translation)
+  }, 0)
+}

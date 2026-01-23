@@ -18,6 +18,7 @@
             <a-option value="">全部</a-option>
             <a-option value="movie">电影</a-option>
             <a-option value="show">电视剧</a-option>
+            <a-option value="season">季度</a-option>
           </a-select>
           
           <a-select
@@ -61,7 +62,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { IconDelete } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show } from '../types/api'
+import type { Movie, Show, Season } from '../types/api'
 import { usePageState } from '../composables/usePageState'
 import { useAuth } from '../composables/useAuth'
 
@@ -69,10 +70,13 @@ interface WatchlistItem {
   listed_at: string
   movie?: Movie
   show?: Show
+  season?: Season
 }
 
 interface ExtendedMedia extends Movie, Show {
   listed_at?: string
+  media_type: 'movie' | 'show' | 'season'
+  season_number?: number
 }
 
 const { userInfo } = useAuth()
@@ -106,10 +110,7 @@ const filteredItems = computed(() => {
   
   // 类型筛选
   if (filterType.value) {
-    items = items.filter(item => {
-      const isMovie = 'tagline' in item
-      return filterType.value === 'movie' ? isMovie : !isMovie
-    })
+    items = items.filter(item => item.media_type === filterType.value)
   }
   
   // 排序
@@ -126,9 +127,9 @@ const filteredItems = computed(() => {
         }
         return 0
       case 'title_asc':
-        return a.title.localeCompare(b.title)
+        return (a.title || '').localeCompare(b.title || '')
       case 'title_desc':
-        return b.title.localeCompare(a.title)
+        return (b.title || '').localeCompare(a.title || '')
       case 'year_desc':
         return (b.year || 0) - (a.year || 0)
       case 'year_asc':
@@ -173,7 +174,7 @@ const loadWatchlist = async () => {
   
   loading.value = true
   try {
-    const [movieResults, showResults] = await Promise.all([
+    const [movieResults, showResults, seasonResults] = await Promise.all([
       invoke<WatchlistItem[]>('get_watchlist', {
         id: userInfo.value.username,
         selectType: 'movies'
@@ -181,6 +182,10 @@ const loadWatchlist = async () => {
       invoke<WatchlistItem[]>('get_watchlist', {
         id: userInfo.value.username,
         selectType: 'shows'
+      }),
+      invoke<WatchlistItem[]>('get_watchlist', {
+        id: userInfo.value.username,
+        selectType: 'seasons'
       })
     ])
     
@@ -197,6 +202,19 @@ const loadWatchlist = async () => {
       if (item.show) {
         const extendedShow = { ...item.show, listed_at: item.listed_at, media_type: 'show' } as ExtendedMedia
         items.push(extendedShow)
+      }
+    }
+
+    for (const item of seasonResults) {
+      if (item.season && item.show) {
+        const extendedSeason = { 
+          ...item.show, 
+          listed_at: item.listed_at, 
+          media_type: 'season',
+          season_number: item.season.number,
+          // 保持 title 为 show title, MediaCard 会处理显示 "第 X 季"
+        } as ExtendedMedia
+        items.push(extendedSeason)
       }
     }
     
@@ -292,4 +310,4 @@ onBeforeUnmount(() => {
     font-size: 24px;
   }
 }
-</style> 
+</style>

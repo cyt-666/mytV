@@ -29,7 +29,7 @@ export interface BaseMedia {
   runtime?: number;
   released?: string;
   trailer?: string;
-  media_type?: 'movie' | 'show';
+  media_type?: 'movie' | 'show' | 'season';
 }
 
 // 电影类型

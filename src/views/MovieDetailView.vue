@@ -164,6 +164,7 @@ import { Message } from '@arco-design/web-vue'
 import { invoke } from "@tauri-apps/api/core"
 import type { MovieDetails, MovieImages } from '../types/api'
 import { getMovieChineseTranslation, type TranslationResult } from '../utils/translation'
+import { useMediaUpdate } from '../composables/useEvent'
 
 const route = useRoute()
 
@@ -181,6 +182,21 @@ const actionLoading = ref({
   collection: false,
   watchlist: false,
   watched: false
+})
+
+// 监听后台更新事件
+useMediaUpdate((payload) => {
+  if (payload.type === 'movie' && payload.id === Number(route.params.id)) {
+    console.log('接收到后台更新数据:', payload.data)
+    movieDetails.value = payload.data
+    // 重新加载翻译
+    loadTranslationAsync(payload.id)
+    Message.info({
+      content: '数据已自动更新',
+      position: 'bottom',
+      duration: 2000
+    })
+  }
 })
 
 // 计算属性
@@ -234,6 +250,7 @@ const fetchMovieDetails = async () => {
 
   try {
     // 立即获取电影详情，不等待翻译
+    // 后端实现了 SWR 策略，如果缓存存在会立即返回，旧数据会触发后台更新事件
     const details = await invoke<MovieDetails>("movie_details", { id: numericId })
     movieDetails.value = details
     
@@ -704,4 +721,4 @@ const checkUserStatus = async () => {
   min-height: 100vh;
   color: white;
 }
-</style> 
+</style>

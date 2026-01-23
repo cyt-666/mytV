@@ -18,6 +18,7 @@
     "http:default",
     "store:allow-save",
     "store:allow-load",
-    "store:default"
+    "store:default",
+    "sql:default"
   ]
 }
