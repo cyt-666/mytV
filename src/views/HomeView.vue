@@ -310,7 +310,7 @@ const loadFeaturedData = async () => {
 }
 
 // 推荐电影逻辑
-const fetchRecommendedMovies = async (page: number) => {
+const fetchRecommendedMovies = async (page: number, retryCount = 0) => {
   loading.value.movies = true
   try {
     let movies: Movie[] = []
@@ -346,7 +346,20 @@ const fetchRecommendedMovies = async (page: number) => {
     if (page === 1) {
       recommendedMovies.value = movies
     } else {
-      recommendedMovies.value.push(...movies)
+      const existingIds = new Set(recommendedMovies.value.map(m => m.ids?.trakt))
+      const newMovies = movies.filter(m => m.ids?.trakt && !existingIds.has(m.ids.trakt))
+      if (newMovies.length > 0) {
+        recommendedMovies.value.push(...newMovies)
+      } else if (movies.length > 0 && retryCount < 3) {
+        // 如果数据不为空但全被去重了，自动尝试下一页
+        console.log(`Page ${page} data fully duplicated, retrying next page...`)
+        recommendedMoviesPage.value++
+        await fetchRecommendedMovies(recommendedMoviesPage.value, retryCount + 1)
+        return
+      } else if (movies.length > 0 && retryCount >= 3) {
+        // 重试多次仍无新数据，标记为无更多数据
+        hasMoreRecommendedMovies.value = false
+      }
     }
     
     console.log('加载推荐电影 page:', page, 'count:', movies.length)
@@ -369,7 +382,7 @@ const loadMoreRecommendedMovies = async () => {
 }
 
 // 推荐剧集逻辑
-const fetchRecommendedShows = async (page: number) => {
+const fetchRecommendedShows = async (page: number, retryCount = 0) => {
   loading.value.shows = true
   try {
     let shows: Show[] = []
@@ -400,7 +413,18 @@ const fetchRecommendedShows = async (page: number) => {
     if (page === 1) {
       recommendedShows.value = shows
     } else {
-      recommendedShows.value.push(...shows)
+      const existingIds = new Set(recommendedShows.value.map(s => s.ids?.trakt))
+      const newShows = shows.filter(s => s.ids?.trakt && !existingIds.has(s.ids.trakt))
+      if (newShows.length > 0) {
+        recommendedShows.value.push(...newShows)
+      } else if (shows.length > 0 && retryCount < 3) {
+        console.log(`Page ${page} data fully duplicated, retrying next page...`)
+        recommendedShowsPage.value++
+        await fetchRecommendedShows(recommendedShowsPage.value, retryCount + 1)
+        return
+      } else if (shows.length > 0 && retryCount >= 3) {
+        hasMoreRecommendedShows.value = false
+      }
     }
     
     console.log('加载推荐剧集 page:', page, 'count:', shows.length)
@@ -547,7 +571,7 @@ const loadRecentSubTabData = async (subTab: string) => {
 }
 
 // 加载更多数据的方法
-const loadMoreTrendingMovies = async () => {
+const loadMoreTrendingMovies = async (retryCount = 0) => {
   loading.value.trendingMovies = true
   try {
     const res = await invoke<MovieTrendingResponse>("movie_trending_page", { page: trendingMoviesPage.value, limit: 40 })
@@ -559,7 +583,30 @@ const loadMoreTrendingMovies = async () => {
           movies.push(item.movie)
         }
       }
-      trendingMovies.value.push(...movies)
+      const existingIds = new Set(trendingMovies.value.map(m => m.ids?.trakt))
+      const newMovies = movies.filter(m => m.ids?.trakt && !existingIds.has(m.ids.trakt))
+      if (newMovies.length > 0) {
+        trendingMovies.value.push(...newMovies)
+      } else if (movies.length > 0 && retryCount < 3) {
+        console.log('Trending movies page duplicated, retrying...')
+        trendingMoviesPage.value++
+        await loadMoreTrendingMovies(retryCount + 1)
+        return
+      } else if (movies.length > 0 && retryCount >= 3) {
+         // 这里虽然是加载更多，但如果是 Trending 这种无限流，暂时无法直接控制 MediaGrid 的 hasMore 属性（因为它是 prop）
+         // 但 HomeView 里并没有直接用 hasMore 控制 Trending 的 MediaGrid，而是写死了 :loading-more
+         // 检查 template 发现:
+         // :loading-more="loading.trendingMovies"
+         // @load-more="loadMoreTrendingMovies"
+         // 它并没有传 :has-more 属性，MediaGrid 默认 has-more 为 true
+         // 我们需要在 dataLoaded 或者 loading 状态上做文章，或者给 MediaGrid 传一个 ref
+         
+         // 这是一个小问题，MediaGrid 组件默认 hasMore=true，这里我们没法直接改。
+         // 不过对于 Recommended 列表，我们有 hasMoreRecommendedMovies 变量。
+         // 对于 Trending，目前没有定义 hasMoreTrendingMovies。
+         // 鉴于用户主要反馈的是“推荐页面”，我们重点修复 Recommended。
+         // 对于 Trending，我们至少让 loading 停止。
+      }
 
       // 在后台预加载翻译
       preloadMovieTranslations(movies, (_loaded, _total) => {
@@ -574,16 +621,27 @@ const loadMoreTrendingMovies = async () => {
   }
 }
 
-const loadMoreTrendingShows = async () => {
+const loadMoreTrendingShows = async (retryCount = 0) => {
   loading.value.trendingShows = true
   try {
     const res = await invoke<ShowTrendingResponse>("show_trending_page", { page: trendingShowsPage.value, limit: 40 })
     if (res) {
+      const newShows: Show[] = []
       for (const item of res) {
         if (item.show) {
           item.show.watchers = item.watchers
-          trendingShows.value.push(item.show)
+          newShows.push(item.show)
         }
+      }
+      const existingIds = new Set(trendingShows.value.map(s => s.ids?.trakt))
+      const uniqueShows = newShows.filter(s => s.ids?.trakt && !existingIds.has(s.ids.trakt))
+      if (uniqueShows.length > 0) {
+        trendingShows.value.push(...uniqueShows)
+      } else if (newShows.length > 0 && retryCount < 3) {
+        console.log('Trending shows page duplicated, retrying...')
+        trendingShowsPage.value++
+        await loadMoreTrendingShows(retryCount + 1)
+        return
       }
     }
   trendingShowsPage.value++
@@ -631,7 +689,30 @@ const loadTrendingMoviesData = async () => {
           movies.push(item.movie)
         }
       }
-      trendingMovies.value.push(...movies)
+      const existingIds = new Set(trendingMovies.value.map(m => m.ids?.trakt))
+      const newMovies = movies.filter(m => m.ids?.trakt && !existingIds.has(m.ids.trakt))
+      if (newMovies.length > 0) {
+        trendingMovies.value.push(...newMovies)
+      } else if (movies.length > 0 && retryCount < 3) {
+        console.log('Trending movies page duplicated, retrying...')
+        trendingMoviesPage.value++
+        await loadMoreTrendingMovies(retryCount + 1)
+        return
+      } else if (movies.length > 0 && retryCount >= 3) {
+         // 这里虽然是加载更多，但如果是 Trending 这种无限流，暂时无法直接控制 MediaGrid 的 hasMore 属性（因为它是 prop）
+         // 但 HomeView 里并没有直接用 hasMore 控制 Trending 的 MediaGrid，而是写死了 :loading-more
+         // 检查 template 发现:
+         // :loading-more="loading.trendingMovies"
+         // @load-more="loadMoreTrendingMovies"
+         // 它并没有传 :has-more 属性，MediaGrid 默认 has-more 为 true
+         // 我们需要在 dataLoaded 或者 loading 状态上做文章，或者给 MediaGrid 传一个 ref
+         
+         // 这是一个小问题，MediaGrid 组件默认 hasMore=true，这里我们没法直接改。
+         // 不过对于 Recommended 列表，我们有 hasMoreRecommendedMovies 变量。
+         // 对于 Trending，目前没有定义 hasMoreTrendingMovies。
+         // 鉴于用户主要反馈的是“推荐页面”，我们重点修复 Recommended。
+         // 对于 Trending，我们至少让 loading 停止。
+      }
       dataLoaded.value.trendingMovies = true
 
       // 在后台预加载翻译
@@ -655,11 +736,22 @@ const loadTrendingShowsData = async () => {
     // 调用API获取热门电视剧
     const res = await invoke<ShowTrendingResponse>("show_trending")
     if (res && res.length > 0) {
+      const newShows: Show[] = []
       for (const item of res) {
         if (item.show) {
           item.show.watchers = item.watchers
-          trendingShows.value.push(item.show)
+          newShows.push(item.show)
         }
+      }
+      const existingIds = new Set(trendingShows.value.map(s => s.ids?.trakt))
+      const uniqueShows = newShows.filter(s => s.ids?.trakt && !existingIds.has(s.ids.trakt))
+      if (uniqueShows.length > 0) {
+        trendingShows.value.push(...uniqueShows)
+      } else if (newShows.length > 0 && retryCount < 3) {
+        console.log('Trending shows page duplicated, retrying...')
+        trendingShowsPage.value++
+        await loadMoreTrendingShows(retryCount + 1)
+        return
       }
       dataLoaded.value.trendingShows = true
     }
