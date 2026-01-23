@@ -266,7 +266,8 @@ pub async fn get_season_episodes(app: AppHandle, id: u32, season: u32) -> Result
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.season_episodes.uri.clone();
-    uri = uri.replace("id", &id.to_string()).replace("season", &season.to_string());
+    // 修正: 占位符是 season_number
+    uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string());
     
     let mut params = HashMap::new();
     params.insert("extended".to_string(), "full".to_string());
@@ -285,10 +286,11 @@ pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.episode_details.uri.clone();
+    // 修正: 占位符是 season_number 和 episode_number
     uri = uri
         .replace("id", &id.to_string())
-        .replace("season", &season.to_string())
-        .replace("episode", &episode.to_string());
+        .replace("season_number", &season.to_string())
+        .replace("episode_number", &episode.to_string());
         
     let mut params = HashMap::new();
     params.insert("extended".to_string(), "full".to_string());
@@ -322,7 +324,8 @@ pub async fn season_trans(app: AppHandle, id: u32, season: u32, language: String
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.season_trans.uri.clone();
-    uri = uri.replace("id", &id.to_string()).replace("season", &season.to_string()).replace("language", &language);
+    // 修正: 占位符是 season_number
+    uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string()).replace("language", &language);
     
     let result = client.req_api(&app, API.shows.season_trans.method.as_str(), uri, None, None, None, None, true).await;
     if let Ok(result) = result {
