@@ -370,10 +370,39 @@ export interface MovieRecommend extends Movie {}
 
 // Token接口
 export interface Token {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token: string;
-  scope: string;
-  created_at: number;
-} 
+  access_token: string
+  token_type: string
+  expires_in: number
+  refresh_token: string
+  scope: string
+  created_at: number
+}
+
+export interface MovieWatched {
+  watcher_count: number
+  play_count: number
+  collected_count: number
+  movie: Movie
+}
+
+export interface MovieCollected {
+  collected_count: number
+  movie: Movie
+}
+
+export interface ShowWatched {
+  watcher_count: number
+  play_count: number
+  collected_count: number
+  show: Show
+}
+
+export interface ShowCollected {
+  collected_count: number
+  show: Show
+}
+
+export type MovieWatchedResponse = MovieWatched[]
+export type MovieCollectedResponse = MovieCollected[]
+export type ShowWatchedResponse = ShowWatched[]
+export type ShowCollectedResponse = ShowCollected[]

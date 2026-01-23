@@ -79,6 +79,24 @@ pub struct ShowTranslation {
 pub type ShowTranslations = Vec<ShowTranslation>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowWatched {
+    pub watcher_count: u32,
+    pub play_count: u32,
+    pub collected_count: u32,
+    pub show: Show,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowCollected {
+    pub collected_count: u32,
+    pub show: Show,
+}
+
+pub type ShowWatchedResponse = Vec<ShowWatched>;
+pub type ShowCollectedResponse = Vec<ShowCollected>;
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Season {
     pub number: u32,
     pub ids: SeasonIds,

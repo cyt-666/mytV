@@ -93,7 +93,10 @@ pub struct MovieApi {
     pub anticipated: Entry,
     pub details: Entry,
     pub trans: Entry,
+    pub watched: Entry,
+    pub collected: Entry,
 }
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ShowApi {
@@ -107,7 +110,10 @@ pub struct ShowApi {
     pub season_episodes: Entry,
     pub episode_details: Entry,
     pub progress: Entry,
+    pub watched: Entry,
+    pub collected: Entry,
 }
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SyncApi {

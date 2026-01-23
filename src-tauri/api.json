@@ -168,6 +168,20 @@
             "uri":"/movies/id/translations/language",
             "method":"GET",
             "params":{}
+        },
+        "watched":{
+            "uri":"/movies/watched/period",
+            "method":"GET",
+            "params":{
+                "extended":"full,images"
+            }
+        },
+        "collected":{
+            "uri":"/movies/collected/period",
+            "method":"GET",
+            "params":{
+                "extended":"full,images"
+            }
         }
     },
     "shows":{
@@ -233,6 +247,20 @@
             "method":"GET",
             "params":{
                 "extended":"full"
+            }
+        },
+        "watched":{
+            "uri":"/shows/watched/period",
+            "method":"GET",
+            "params":{
+                "extended":"full,images"
+            }
+        },
+        "collected":{
+            "uri":"/shows/collected/period",
+            "method":"GET",
+            "params":{
+                "extended":"full,images"
             }
         }
     },

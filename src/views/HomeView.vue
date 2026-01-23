@@ -133,6 +133,139 @@
               </a-tab-pane>
             </a-tabs>
           </a-tab-pane>
+
+        <!-- 按类型浏览 -->
+        <a-tab-pane key="genres" title="🎭 按类型">
+          <div class="filter-toolbar">
+            <a-space size="medium" wrap>
+              <!-- 媒体类型切换 -->
+              <a-radio-group v-model="genreMediaType" type="button" @change="handleGenreMediaTypeChange">
+                <a-radio value="movies">电影</a-radio>
+                <a-radio value="shows">剧集</a-radio>
+              </a-radio-group>
+              
+              <!-- 数据源切换 -->
+              <a-select 
+                v-model="genreDataSource" 
+                placeholder="数据源" 
+                style="width: 160px;"
+                @change="handleGenreDataSourceChange"
+              >
+                <a-option value="watched-weekly">📊 本周观看榜</a-option>
+                <a-option value="watched-monthly">📈 本月观看榜</a-option>
+                <a-option value="collected-monthly">⭐ 本月收藏榜</a-option>
+              </a-select>
+              
+              <!-- 类型选择器 -->
+              <a-select 
+                v-model="selectedGenre" 
+                placeholder="选择类型" 
+                style="width: 180px;"
+                @change="handleGenreChange"
+              >
+                <a-option value="all">🌟 全部类型</a-option>
+                <a-option value="action">💥 动作</a-option>
+                <a-option value="adventure">🗺️ 冒险</a-option>
+                <a-option value="animation">🎨 动画</a-option>
+                <a-option value="comedy">😄 喜剧</a-option>
+                <a-option value="crime">🔫 犯罪</a-option>
+                <a-option value="documentary">📹 纪录片</a-option>
+                <a-option value="drama">🎭 剧情</a-option>
+                <a-option value="family">👨‍👩‍👧 家庭</a-option>
+                <a-option value="fantasy">🧙 奇幻</a-option>
+                <a-option value="history">📜 历史</a-option>
+                <a-option value="horror">👻 恐怖</a-option>
+                <a-option value="music">🎵 音乐</a-option>
+                <a-option value="mystery">🔍 悬疑</a-option>
+                <a-option value="romance">💕 爱情</a-option>
+                <a-option value="science-fiction">🚀 科幻</a-option>
+                <a-option value="thriller">😱 惊悚</a-option>
+                <a-option value="war">⚔️ 战争</a-option>
+              </a-select>
+
+              <!-- 结果计数 -->
+              <a-tag color="arcoblue" v-if="genreFilteredItems.length > 0">
+                <template #icon><icon-check-circle /></template>
+                {{ genreFilteredItems.length }} 个结果
+              </a-tag>
+            </a-space>
+          </div>
+
+          <MediaGrid
+            :items="genreFilteredItems"
+            :loading="loading.genre && genreCurrentPage === 1"
+            :loading-more="loadingMore.genre"
+            :has-more="hasMoreGenre"
+            @load-more="loadMoreGenreData"
+            :media-type="genreMediaType === 'movies' ? 'movie' : 'show'"
+            :empty-message="selectedGenre === 'all' ? '暂无数据' : `暂无${getGenreName(selectedGenre)}类型内容`"
+          />
+        </a-tab-pane>
+
+        <!-- 按地区浏览 -->
+        <a-tab-pane key="countries" title="🌍 按地区">
+          <div class="filter-toolbar">
+            <a-space size="medium" wrap>
+              <!-- 媒体类型切换 -->
+              <a-radio-group v-model="countryMediaType" type="button" @change="handleCountryMediaTypeChange">
+                <a-radio value="movies">电影</a-radio>
+                <a-radio value="shows">剧集</a-radio>
+              </a-radio-group>
+              
+              <!-- 数据源切换 -->
+              <a-select 
+                v-model="countryDataSource" 
+                placeholder="数据源" 
+                style="width: 160px;"
+                @change="handleCountryDataSourceChange"
+              >
+                <a-option value="watched-weekly">📊 本周观看榜</a-option>
+                <a-option value="watched-monthly">📈 本月观看榜</a-option>
+                <a-option value="collected-monthly">⭐ 本月收藏榜</a-option>
+              </a-select>
+              
+              <!-- 地区选择器 -->
+              <a-select 
+                v-model="selectedCountry" 
+                placeholder="选择地区" 
+                style="width: 180px;"
+                @change="handleCountryChange"
+              >
+                <a-option value="all">🌏 全部地区</a-option>
+                <a-option value="us">🇺🇸 美国</a-option>
+                <a-option value="gb">🇬🇧 英国</a-option>
+                <a-option value="jp">🇯🇵 日本</a-option>
+                <a-option value="kr">🇰🇷 韩国</a-option>
+                <a-option value="cn">🇨🇳 中国</a-option>
+                <a-option value="fr">🇫🇷 法国</a-option>
+                <a-option value="de">🇩🇪 德国</a-option>
+                <a-option value="ca">🇨🇦 加拿大</a-option>
+                <a-option value="au">🇦🇺 澳大利亚</a-option>
+                <a-option value="es">🇪🇸 西班牙</a-option>
+                <a-option value="it">🇮🇹 意大利</a-option>
+                <a-option value="in">🇮🇳 印度</a-option>
+                <a-option value="hk">🇭🇰 香港</a-option>
+                <a-option value="tw">🇹🇼 台湾</a-option>
+              </a-select>
+
+              <!-- 结果计数 -->
+              <a-tag color="arcoblue" v-if="countryFilteredItems.length > 0">
+                <template #icon><icon-check-circle /></template>
+                {{ countryFilteredItems.length }} 个结果
+              </a-tag>
+            </a-space>
+          </div>
+
+          <MediaGrid
+            :items="countryFilteredItems"
+            :loading="loading.country && countryCurrentPage === 1"
+            :loading-more="loadingMore.country"
+            :has-more="hasMoreCountry"
+            @load-more="loadMoreCountryData"
+            :media-type="countryMediaType === 'movies' ? 'movie' : 'show'"
+            :empty-message="selectedCountry === 'all' ? '暂无数据' : `暂无${getCountryName(selectedCountry)}地区内容`"
+          />
+        </a-tab-pane>
         </a-tabs>
       </section>
     </div>
@@ -140,13 +273,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, onBeforeUnmount, inject } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount, inject, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  IconStarFill, IconPlayArrow, IconPlusCircle
+  IconStarFill, IconPlayArrow, IconPlusCircle, IconCheckCircle
 } from '@arco-design/web-vue/es/icon'
 import MediaGrid from '../components/MediaGrid.vue'
-import type { Movie, Show, MoviesRecommendResponse, ShowsRecommendResponse, MovieTrendingResponse, ShowTrendingResponse, CalendarMovie, CalendarShow } from '../types/api'
+import type { 
+  Movie, Show, 
+  MoviesRecommendResponse, ShowsRecommendResponse, 
+  MovieTrendingResponse, ShowTrendingResponse, 
+  CalendarMovie, CalendarShow,
+  MovieWatchedResponse, MovieCollectedResponse,
+  ShowWatchedResponse, ShowCollectedResponse
+} from '../types/api'
 import { invoke } from "@tauri-apps/api/core";
 import { preloadMovieTranslations, getMovieChineseTranslation, type TranslationResult } from '../utils/translation'
 import { useHomePageState } from '../composables/usePageState'
@@ -178,6 +318,24 @@ const recommendedShows = ref<Show[]>([])
 const recentMovies = ref<Movie[]>([])
 const recentShows = ref<Show[]>([])
 
+// ===== 按类型浏览状态 =====
+const selectedGenre = ref('all')
+const genreMediaType = ref('movies')
+const genreDataSource = ref('watched-weekly')
+const genreRawData = ref<(Movie | Show)[]>([])
+const genreEnrichedData = ref<(Movie | Show)[]>([])
+const genreCurrentPage = ref(1)
+const hasMoreGenre = ref(true)
+
+// ===== 按地区浏览状态 =====
+const selectedCountry = ref('all')
+const countryMediaType = ref('movies')
+const countryDataSource = ref('watched-weekly')
+const countryRawData = ref<(Movie | Show)[]>([])
+const countryEnrichedData = ref<(Movie | Show)[]>([])
+const countryCurrentPage = ref(1)
+const hasMoreCountry = ref(true)
+
 const loading = ref({
   featured: false,
   trendingMovies: false,
@@ -185,7 +343,14 @@ const loading = ref({
   movies: false,
   shows: false,
   recentMovies: false,
-  recentShows: false
+  recentShows: false,
+  genre: false,
+  country: false
+})
+
+const loadingMore = ref({
+  genre: false,
+  country: false
 })
 
 // 添加标志防止重复加载
@@ -195,7 +360,9 @@ const dataLoaded = ref({
   movies: false,
   shows: false,
   recentMovies: false,
-  recentShows: false
+  recentShows: false,
+  genre: false,
+  country: false
 })
 
 const trendingMoviesPage = ref(1)
@@ -209,6 +376,76 @@ const isFallbackMovies = ref(false)
 const recommendedShowsPage = ref(1)
 const hasMoreRecommendedShows = ref(true)
 const isFallbackShows = ref(false)
+
+// ===== 类型筛选计算属性 =====
+const genreFilteredItems = computed(() => {
+  if (selectedGenre.value === 'all') {
+    return genreEnrichedData.value
+  }
+  
+  return genreEnrichedData.value.filter(item => {
+    const genres = (item as any).genres || []
+    return genres.some((g: string) => 
+      g.toLowerCase().replace(/\s+/g, '-') === selectedGenre.value
+    )
+  })
+})
+
+// ===== 地区筛选计算属性 =====
+const countryFilteredItems = computed(() => {
+  if (selectedCountry.value === 'all') {
+    return countryEnrichedData.value
+  }
+  
+  return countryEnrichedData.value.filter(item => {
+    const country = ((item as any).country || '').toLowerCase()
+    return country === selectedCountry.value
+  })
+})
+
+// ===== 辅助方法 =====
+const getGenreName = (slug: string) => {
+  const genreMap: Record<string, string> = {
+    'action': '动作',
+    'adventure': '冒险',
+    'animation': '动画',
+    'comedy': '喜剧',
+    'crime': '犯罪',
+    'documentary': '纪录片',
+    'drama': '剧情',
+    'family': '家庭',
+    'fantasy': '奇幻',
+    'history': '历史',
+    'horror': '恐怖',
+    'music': '音乐',
+    'mystery': '悬疑',
+    'romance': '爱情',
+    'science-fiction': '科幻',
+    'thriller': '惊悚',
+    'war': '战争'
+  }
+  return genreMap[slug] || slug
+}
+
+const getCountryName = (code: string) => {
+  const countryMap: Record<string, string> = {
+    'us': '美国',
+    'gb': '英国',
+    'jp': '日本',
+    'kr': '韩国',
+    'cn': '中国',
+    'fr': '法国',
+    'de': '德国',
+    'ca': '加拿大',
+    'au': '澳大利亚',
+    'es': '西班牙',
+    'it': '意大利',
+    'in': '印度',
+    'hk': '香港',
+    'tw': '台湾'
+  }
+  return countryMap[code] || code
+}
 
 // 方法
 const getHeroBackground = (item: Movie) => {
@@ -275,6 +512,12 @@ const loadTabData = async (tab: string) => {
       break
     case 'recent':
       await loadRecentData()
+      break
+    case 'genres':
+      await loadGenreData()
+      break
+    case 'countries':
+      await loadCountryData()
       break
   }
 }
@@ -763,6 +1006,328 @@ const loadTrendingShowsData = async (retryCount = 0) => {
   }
 }
 
+// ===== 加载类型浏览数据 =====
+const loadGenreData = async () => {
+  if (dataLoaded.value.genre) return
+  
+  loading.value.genre = true
+  genreCurrentPage.value = 1
+  genreRawData.value = []
+  genreEnrichedData.value = []
+  hasMoreGenre.value = true
+  
+  try {
+    await fetchGenreData()
+    dataLoaded.value.genre = true
+  } catch (error) {
+    console.error('加载类型数据失败:', error)
+  } finally {
+    loading.value.genre = false
+  }
+}
+
+const fetchGenreData = async () => {
+  const limit = 40
+  
+  try {
+    let items: Movie[] | Show[] = []
+    
+    const [source, period] = genreDataSource.value.split('-')
+    
+    if (genreMediaType.value === 'movies') {
+      if (source === 'watched') {
+        const res = await invoke<MovieWatchedResponse>('movie_watched_period', { 
+          period,
+          page: genreCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.movie,
+          watcher_count: item.watcher_count,
+          play_count: item.play_count
+        }))
+      } else if (source === 'collected') {
+        const res = await invoke<MovieCollectedResponse>('movie_collected_period', { 
+          period,
+          page: genreCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.movie,
+          collected_count: item.collected_count
+        }))
+      }
+    } else {
+      if (source === 'watched') {
+        const res = await invoke<ShowWatchedResponse>('show_watched_period', { 
+          period,
+          page: genreCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.show,
+          watcher_count: item.watcher_count,
+          play_count: item.play_count
+        }))
+      } else if (source === 'collected') {
+        const res = await invoke<ShowCollectedResponse>('show_collected_period', { 
+          period,
+          page: genreCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.show,
+          collected_count: item.collected_count
+        }))
+      }
+    }
+    
+    genreRawData.value.push(...items)
+    
+    await enrichItemsWithDetails(items, genreEnrichedData, genreMediaType.value)
+    
+    if (items.length < limit) {
+      hasMoreGenre.value = false
+    }
+    
+    console.log(`加载类型数据: ${items.length} 条, 当前总数: ${genreEnrichedData.value.length}`)
+  } catch (error) {
+    console.error('获取类型数据失败:', error)
+    throw error
+  }
+}
+
+// ===== 加载地区浏览数据 =====
+const loadCountryData = async () => {
+  if (dataLoaded.value.country) return
+  
+  loading.value.country = true
+  countryCurrentPage.value = 1
+  countryRawData.value = []
+  countryEnrichedData.value = []
+  hasMoreCountry.value = true
+  
+  try {
+    await fetchCountryData()
+    dataLoaded.value.country = true
+  } catch (error) {
+    console.error('加载地区数据失败:', error)
+  } finally {
+    loading.value.country = false
+  }
+}
+
+const fetchCountryData = async () => {
+  const limit = 40
+  
+  try {
+    let items: Movie[] | Show[] = []
+    
+    const [source, period] = countryDataSource.value.split('-')
+    
+    if (countryMediaType.value === 'movies') {
+      if (source === 'watched') {
+        const res = await invoke<MovieWatchedResponse>('movie_watched_period', { 
+          period,
+          page: countryCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.movie,
+          watcher_count: item.watcher_count,
+          play_count: item.play_count
+        }))
+      } else if (source === 'collected') {
+        const res = await invoke<MovieCollectedResponse>('movie_collected_period', { 
+          period,
+          page: countryCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.movie,
+          collected_count: item.collected_count
+        }))
+      }
+    } else {
+      if (source === 'watched') {
+        const res = await invoke<ShowWatchedResponse>('show_watched_period', { 
+          period,
+          page: countryCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.show,
+          watcher_count: item.watcher_count,
+          play_count: item.play_count
+        }))
+      } else if (source === 'collected') {
+        const res = await invoke<ShowCollectedResponse>('show_collected_period', { 
+          period,
+          page: countryCurrentPage.value, 
+          limit 
+        })
+        items = res.map(item => ({
+          ...item.show,
+          collected_count: item.collected_count
+        }))
+      }
+    }
+    
+    countryRawData.value.push(...items)
+    
+    await enrichItemsWithDetails(items, countryEnrichedData, countryMediaType.value)
+    
+    if (items.length < limit) {
+      hasMoreCountry.value = false
+    }
+    
+    console.log(`加载地区数据: ${items.length} 条, 当前总数: ${countryEnrichedData.value.length}`)
+  } catch (error) {
+    console.error('获取地区数据失败:', error)
+    throw error
+  }
+}
+
+// ===== 批量丰富数据详情 =====
+const enrichItemsWithDetails = async (
+  items: (Movie | Show)[], 
+  targetArray: typeof genreEnrichedData,
+  mediaType: string
+) => {
+  const BATCH_SIZE = 5
+  const enrichedItems: (Movie | Show)[] = []
+  
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE)
+    
+    const detailsPromises = batch.map(async item => {
+      try {
+        const id = item.ids?.trakt
+        if (!id) return item
+        
+        const cacheKey = `enriched_${mediaType}_${id}`
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached) {
+          try {
+            return JSON.parse(cached)
+          } catch {
+            // 缓存损坏,继续获取
+          }
+        }
+        
+        const command = mediaType === 'movies' ? 'movie_details' : 'show_details'
+        const details = await invoke<any>(command, { id })
+        
+        const enriched = { ...item, ...details } as Movie | Show
+        
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(enriched))
+        } catch (e) {
+          console.warn('sessionStorage 已满,跳过缓存')
+        }
+        
+        return enriched
+      } catch (error) {
+        console.warn(`获取 ${item.ids?.trakt} 详情失败:`, error)
+        return item
+      }
+    })
+    
+    const batchResults = await Promise.all(detailsPromises)
+    enrichedItems.push(...batchResults)
+    
+    targetArray.value = [...enrichedItems]
+    
+    if (i + BATCH_SIZE < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+  }
+  
+  if (mediaType === 'movies') {
+    preloadMovieTranslations(enrichedItems as Movie[], () => {})
+  }
+}
+
+// ===== 加载更多 =====
+const loadMoreGenreData = async () => {
+  if (loadingMore.value.genre || !hasMoreGenre.value) return
+  
+  loadingMore.value.genre = true
+  genreCurrentPage.value++
+  
+  try {
+    await fetchGenreData()
+  } catch (error) {
+    console.error('加载更多类型数据失败:', error)
+    genreCurrentPage.value--
+  } finally {
+    loadingMore.value.genre = false
+  }
+}
+
+const loadMoreCountryData = async () => {
+  if (loadingMore.value.country || !hasMoreCountry.value) return
+  
+  loadingMore.value.country = true
+  countryCurrentPage.value++
+  
+  try {
+    await fetchCountryData()
+  } catch (error) {
+    console.error('加载更多地区数据失败:', error)
+    countryCurrentPage.value--
+  } finally {
+    loadingMore.value.country = false
+  }
+}
+
+// ===== 处理筛选变更 =====
+const handleGenreChange = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const handleCountryChange = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const handleGenreMediaTypeChange = () => {
+  selectedGenre.value = 'all'
+  genreCurrentPage.value = 1
+  genreRawData.value = []
+  genreEnrichedData.value = []
+  hasMoreGenre.value = true
+  dataLoaded.value.genre = false
+  loadGenreData()
+}
+
+const handleCountryMediaTypeChange = () => {
+  selectedCountry.value = 'all'
+  countryCurrentPage.value = 1
+  countryRawData.value = []
+  countryEnrichedData.value = []
+  hasMoreCountry.value = true
+  dataLoaded.value.country = false
+  loadCountryData()
+}
+
+const handleGenreDataSourceChange = () => {
+  genreCurrentPage.value = 1
+  genreRawData.value = []
+  genreEnrichedData.value = []
+  hasMoreGenre.value = true
+  dataLoaded.value.genre = false
+  loadGenreData()
+}
+
+const handleCountryDataSourceChange = () => {
+  countryCurrentPage.value = 1
+  countryRawData.value = []
+  countryEnrichedData.value = []
+  hasMoreCountry.value = true
+  dataLoaded.value.country = false
+  loadCountryData()
+}
+
 // 生命周期
 onMounted(async () => {
   // 尝试恢复状态
@@ -1036,5 +1601,96 @@ watch(() => route.query.type, (newType, oldType) => {
   .hero-title { font-size: 32px; }
   .hero-overview { font-size: 14px; }
   .category-tabs { padding: 0 20px; }
+}
+
+/* 筛选工具栏 */
+.filter-toolbar {
+  margin: 24px 0 32px 0;
+  padding: 24px;
+  background: linear-gradient(135deg, #f7f8fa 0%, #ffffff 100%);
+  border-radius: 20px;
+  border: 1px solid #e5e6eb;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.filter-toolbar :deep(.arco-space) {
+  width: 100%;
+  justify-content: center;
+}
+
+.filter-toolbar :deep(.arco-radio-group) {
+  background: white;
+  padding: 4px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.filter-toolbar :deep(.arco-radio-button) {
+  border-radius: 10px;
+  border: none;
+  padding: 8px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #4e5969;
+}
+
+.filter-toolbar :deep(.arco-radio-button:hover) {
+  color: #165dff;
+  background: #f2f3f5;
+}
+
+.filter-toolbar :deep(.arco-radio-button-checked) {
+  background: #165dff;
+  color: white;
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.25);
+}
+
+.filter-toolbar :deep(.arco-select-view) {
+  border-radius: 14px;
+  border: 1px solid #e5e6eb;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+  height: 40px;
+  font-weight: 600;
+}
+
+.filter-toolbar :deep(.arco-select-view:hover) {
+  border-color: #165dff;
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
+}
+
+.filter-toolbar :deep(.arco-select-view-focus) {
+  border-color: #165dff;
+  box-shadow: 0 4px 16px rgba(22, 93, 255, 0.2);
+}
+
+.filter-toolbar :deep(.arco-tag) {
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 8px 16px;
+  font-size: 14px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .filter-toolbar {
+    padding: 16px;
+  }
+  
+  .filter-toolbar :deep(.arco-space) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-toolbar :deep(.arco-select) {
+    width: 100% !important;
+  }
 }
 </style>

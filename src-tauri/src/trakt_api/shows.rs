@@ -1,7 +1,8 @@
 use crate::model::shows::{
     Season, SeasonTranslations, Show, ShowAnticipated, ShowDetails, ShowTrending, ShowTranslations,
-    Episode,
+    Episode, ShowWatched, ShowCollected,
 };
+
 use tauri::command;
 use crate::trakt_api::{ApiClient, API};
 use tauri::{AppHandle, Manager, Emitter};
@@ -414,6 +415,106 @@ pub async fn show_translation(app: AppHandle, id: u32, language: String) -> Resu
         Ok(show_translations)
     } else {
         Err(result.unwrap_err())
+    }
+}
+
+#[command]
+pub async fn show_watched_period(
+    app: AppHandle,
+    period: String,
+    page: u32,
+    limit: u32
+) -> Result<Vec<ShowWatched>, u16> {
+    let cache_key = format!("api_show_watched_{}_p{}_l{}", period, page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<ShowWatched>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    
+    let mut uri = API.shows.watched.uri.clone();
+    uri = uri.replace("period", &period);
+    
+    let result = client
+        .req_api(
+            &app,
+            API.shows.watched.method.as_str(),
+            uri,
+            None,
+            None,
+            Some(limit),
+            Some(page),
+            true
+        )
+        .await;
+
+    match result {
+        Ok(result) => {
+            let show_watched = serde_json::from_value::<Vec<ShowWatched>>(result.clone()).unwrap();
+            
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            
+            Ok(show_watched)
+        }
+        Err(e) => Err(e)
+    }
+}
+
+#[command]
+pub async fn show_collected_period(
+    app: AppHandle,
+    period: String,
+    page: u32,
+    limit: u32
+) -> Result<Vec<ShowCollected>, u16> {
+    let cache_key = format!("api_show_collected_{}_p{}_l{}", period, page, limit);
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
+            if let Ok(data) = serde_json::from_value::<Vec<ShowCollected>>(json) {
+                return Ok(data);
+            }
+        }
+    }
+
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    
+    let mut uri = API.shows.collected.uri.clone();
+    uri = uri.replace("period", &period);
+    
+    let result = client
+        .req_api(
+            &app,
+            API.shows.collected.method.as_str(),
+            uri,
+            None,
+            None,
+            Some(limit),
+            Some(page),
+            true
+        )
+        .await;
+
+    match result {
+        Ok(result) => {
+            let show_collected = serde_json::from_value::<Vec<ShowCollected>>(result.clone()).unwrap();
+            
+            if let Some(pool) = app.try_state::<DbPool>() {
+                cache::set_api_response_cache(&pool.0, &cache_key, &result).await;
+            }
+            
+            Ok(show_collected)
+        }
+        Err(e) => Err(e)
     }
 }
 

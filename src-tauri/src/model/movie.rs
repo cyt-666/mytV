@@ -65,3 +65,21 @@ pub struct MovieTranslation {
 
 // 电影翻译信息列表的类型别名
 pub type MovieTranslations = Vec<MovieTranslation>;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MovieWatched {
+    pub watcher_count: u32,
+    pub play_count: u32,
+    pub collected_count: u32,
+    pub movie: Movie,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MovieCollected {
+    pub collected_count: u32,
+    pub movie: Movie,
+}
+
+// 类型别名
+pub type MovieWatchedResponse = Vec<MovieWatched>;
+pub type MovieCollectedResponse = Vec<MovieCollected>;

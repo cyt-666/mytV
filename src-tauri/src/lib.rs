@@ -63,6 +63,8 @@ pub fn run() {
             trakt_api::movie::movie_anticipated,
             trakt_api::movie::movie_details,
             trakt_api::movie::movie_translation,
+            trakt_api::movie::movie_watched_period,
+            trakt_api::movie::movie_collected_period,
             trakt_api::shows::show_trending,
             trakt_api::shows::show_trending_page,
             trakt_api::shows::show_popular_page,
@@ -73,6 +75,9 @@ pub fn run() {
             trakt_api::shows::season_trans,
             trakt_api::shows::get_season_episodes,
             trakt_api::shows::get_episode_details,
+            trakt_api::shows::show_watched_period,
+            trakt_api::shows::show_collected_period,
+
             trakt_api::translation_cache::get_movie_translation_cached,
             trakt_api::translation_cache::get_show_translation_cached,
             trakt_api::translation_cache::get_season_translation_cached,
