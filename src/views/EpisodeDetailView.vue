@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { IconImage, IconStarFill, IconCheck, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
@@ -63,7 +63,6 @@ import type { Episode } from '../types/api'
 import { useMediaUpdate } from '../composables/useEvent'
 
 const route = useRoute()
-const router = useRouter()
 
 const loading = ref(false)
 const error = ref('')
