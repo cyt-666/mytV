@@ -60,6 +60,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import { IconImage, IconStarFill, IconCheck, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
 import type { Episode } from '../types/api'
+import { useMediaUpdate } from '../composables/useEvent'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,6 +68,24 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const episode = ref<Episode | null>(null)
+
+// 监听后台数据更新
+useMediaUpdate((payload) => {
+  if (
+    payload.type === 'episode' &&
+    payload.id === Number(route.params.id) &&
+    payload.season === Number(route.params.season) &&
+    payload.episode === Number(route.params.episode)
+  ) {
+    console.log('收到单集详情后台更新')
+    episode.value = payload.data as Episode
+    Message.info({
+      content: '详情已自动刷新',
+      position: 'bottom',
+      duration: 2000
+    })
+  }
+})
 
 // 从路由状态获取的后备数据
 const fallbackData = ref({

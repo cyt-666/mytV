@@ -263,30 +263,121 @@ async fn fetch_and_cache_show_seasons(app: &AppHandle, id: u32) -> Result<Vec<Se
 
 #[command]
 pub async fn get_season_episodes(app: AppHandle, id: u32, season: u32) -> Result<Vec<Episode>, u16> {
+    let mut cache_data = None;
+    let mut should_fetch = true;
+
+    if let Some(pool) = app.try_state::<DbPool>() {
+        // 复用 get_media_cache，但传入自定义的 ID
+        // ... (注释略)
+        
+        if let Some(result) = cache::get_media_cache(&pool.0, &format!("season_{}", id), season).await {
+            if let Ok(episodes) = serde_json::from_value::<Vec<Episode>>(result.data) {
+                cache_data = Some(episodes);
+                should_fetch = result.is_stale;
+            }
+        }
+    }
+
+    if let Some(data) = cache_data {
+        if !should_fetch {
+            return Ok(data);
+        }
+        
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            match fetch_and_cache_season_episodes(&app_clone, id, season).await {
+                Ok(new_data) => {
+                    info!("Background update success for season {} of show {}", season, id);
+                    let _ = app_clone.emit("media-update", serde_json::json!({
+                        "type": "season",
+                        "id": id,
+                        "season": season,
+                        "data": new_data
+                    }));
+                },
+                Err(e) => error!("Background update failed for season {} of show {}: {}", season, id, e),
+            }
+        });
+        
+        return Ok(data);
+    }
+
+    fetch_and_cache_season_episodes(&app, id, season).await
+}
+
+async fn fetch_and_cache_season_episodes(app: &AppHandle, id: u32, season: u32) -> Result<Vec<Episode>, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.season_episodes.uri.clone();
-    // 修正: 占位符是 season_number
     uri = uri.replace("id", &id.to_string()).replace("season_number", &season.to_string());
     
     let mut params = HashMap::new();
     params.insert("extended".to_string(), "full".to_string());
     
-    let result = client.req_api(&app, API.shows.season_episodes.method.as_str(), uri, Some(params), None, None, None, true).await;
-    if let Ok(result) = result {
-        let episodes = serde_json::from_value::<Vec<Episode>>(result).unwrap();
-        Ok(episodes)
-    } else {
-        Err(result.unwrap_err())
+    let result = client.req_api(app, API.shows.season_episodes.method.as_str(), uri, Some(params), None, None, None, true).await;
+    
+    match result {
+        Ok(result) => {
+            let episodes = serde_json::from_value::<Vec<Episode>>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                // 缓存 Key: season_{id}_{season}
+                cache::set_media_cache(&pool.0, &format!("season_{}", id), season, &result, cache::CACHE_TTL_SHORT).await;
+            }
+            Ok(episodes)
+        }
+        Err(e) => Err(e)
     }
 }
 
 #[command]
 pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: u32) -> Result<Episode, u16> {
+    let mut cache_data = None;
+    let mut should_fetch = true;
+    // 构造缓存 Key: episode_{id}_{season}，且 trakt_id 为 episode_num
+    // 最终 ID: episode_{id}_{season}_{episode}
+    
+    if let Some(pool) = app.try_state::<DbPool>() {
+        let type_prefix = format!("episode_{}_{}", id, season);
+        if let Some(result) = cache::get_media_cache(&pool.0, &type_prefix, episode).await {
+            if let Ok(details) = serde_json::from_value::<Episode>(result.data) {
+                cache_data = Some(details);
+                should_fetch = result.is_stale;
+            }
+        }
+    }
+
+    if let Some(data) = cache_data {
+        if !should_fetch {
+            return Ok(data);
+        }
+        
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            match fetch_and_cache_episode_details(&app_clone, id, season, episode).await {
+                Ok(new_data) => {
+                    info!("Background update success for episode S{}E{} of show {}", season, episode, id);
+                    let _ = app_clone.emit("media-update", serde_json::json!({
+                        "type": "episode",
+                        "id": id,
+                        "season": season,
+                        "episode": episode,
+                        "data": new_data
+                    }));
+                },
+                Err(e) => error!("Background update failed for episode S{}E{} of show {}: {}", season, episode, id, e),
+            }
+        });
+        
+        return Ok(data);
+    }
+
+    fetch_and_cache_episode_details(&app, id, season, episode).await
+}
+
+async fn fetch_and_cache_episode_details(app: &AppHandle, id: u32, season: u32, episode: u32) -> Result<Episode, u16> {
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
     let mut uri = API.shows.episode_details.uri.clone();
-    // 修正: 占位符是 season_number 和 episode_number
     uri = uri
         .replace("id", &id.to_string())
         .replace("season_number", &season.to_string())
@@ -295,12 +386,19 @@ pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: 
     let mut params = HashMap::new();
     params.insert("extended".to_string(), "full".to_string());
 
-    let result = client.req_api(&app, API.shows.episode_details.method.as_str(), uri, Some(params), None, None, None, true).await;
-    if let Ok(result) = result {
-        let episode_details = serde_json::from_value::<Episode>(result).unwrap();
-        Ok(episode_details)
-    } else {
-        Err(result.unwrap_err())
+    let result = client.req_api(app, API.shows.episode_details.method.as_str(), uri, Some(params), None, None, None, true).await;
+    
+    match result {
+        Ok(result) => {
+            let episode_details = serde_json::from_value::<Episode>(result.clone()).unwrap();
+            if let Some(pool) = app.try_state::<DbPool>() {
+                // 缓存 Key: episode_{id}_{season}_{episode}
+                let type_prefix = format!("episode_{}_{}", id, season);
+                cache::set_media_cache(&pool.0, &type_prefix, episode, &result, cache::CACHE_TTL_SHORT).await;
+            }
+            Ok(episode_details)
+        }
+        Err(e) => Err(e)
     }
 }
 

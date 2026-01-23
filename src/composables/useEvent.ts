@@ -19,8 +19,10 @@ export function useEvent<T>(name: string, callback: (payload: T) => void) {
 
 // 媒体详情更新事件
 export interface MediaUpdatePayload {
-  type: 'movie' | 'show' | 'seasons';
+  type: 'movie' | 'show' | 'seasons' | 'season' | 'episode';
   id: number;
+  season?: number;
+  episode?: number;
   data: any;
 }
 

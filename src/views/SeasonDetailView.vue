@@ -96,6 +96,7 @@ import {
   IconExclamationCircle, IconHeart, IconBookmark
 } from '@arco-design/web-vue/es/icon'
 import type { Episode, Seasons } from '../types/api'
+import { useMediaUpdate } from '../composables/useEvent'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,6 +106,23 @@ const error = ref('')
 const episodes = ref<Episode[]>([])
 const seasonNumber = ref(0)
 const traktId = ref<number | null>(null)
+
+// 监听后台数据更新
+useMediaUpdate((payload) => {
+  if (
+    payload.type === 'season' &&
+    payload.id === Number(route.params.id) &&
+    payload.season === Number(route.params.season)
+  ) {
+    console.log('收到季度详情后台更新')
+    episodes.value = payload.data as Episode[]
+    Message.info({
+      content: '列表已自动刷新',
+      position: 'bottom',
+      duration: 2000
+    })
+  }
+})
 const isInCollection = ref(false)
 const isInWatchlist = ref(false)
 const actionLoading = ref({
