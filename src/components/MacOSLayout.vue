@@ -383,12 +383,14 @@ watch(route, async () => {
   flex-direction: column;
   background: #fff;
   position: relative;
+  min-width: 0;
 }
 
 .content-scroll-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-top: 52px;
 }
 
 /* Scrollbar tweaks */
