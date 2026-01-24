@@ -485,3 +485,111 @@ export async function loadSeasonTranslationAsync(
     onTranslationLoaded(translation)
   }, 0)
 }
+
+
+/**
+ * 获取单集的中文翻译信息（带持久化缓存）
+ * @param showId 电视剧的trakt ID
+ * @param seasonNumber 季度编号
+ * @param episodeNumber 集数编号
+ * @returns 中文翻译信息，如果没有找到则返回null
+ */
+export async function getEpisodeChineseTranslation(showId: number, seasonNumber: number, episodeNumber: number): Promise<TranslationResult | null> {
+  const cacheKey = `episode_${showId}_${seasonNumber}_${episodeNumber}`
+  
+  console.log('获取单集翻译:', showId, 'S', seasonNumber, 'E', episodeNumber, '缓存key:', cacheKey)
+  
+  // 检查内存缓存
+  if (memoryCache.has(cacheKey)) {
+    return memoryCache.get(cacheKey)!
+  }
+
+  // 检查是否已有相同请求在进行中
+  if (pendingRequests.has(cacheKey)) {
+    try {
+      return await Promise.race([
+        pendingRequests.get(cacheKey)!,
+        new Promise<TranslationResult | null>((_, reject) => 
+          setTimeout(() => reject(new Error('Pending request timeout')), 5000)
+        )
+      ])
+    } catch (error) {
+      return null
+    }
+  }
+
+  try {
+    // 使用并发管理器执行请求
+    const requestPromise = concurrencyManager.executeRequest(async () => {
+      return Promise.race([
+        invoke<TranslationData | null>("get_episode_translation_cached", { 
+          showId: showId, 
+          season: seasonNumber,
+          episode: episodeNumber
+        }),
+        // 8秒超时
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Translation request timeout')), 8000)
+        )
+      ])
+    }).then(translationData => {
+      const result: TranslationResult | null = translationData ? {
+        title: translationData.title,
+        overview: translationData.overview,
+        tagline: translationData.tagline
+      } : null
+      
+      memoryCache.set(cacheKey, result)
+      return result
+    }).catch(error => {
+      console.warn(`获取单集 ${showId} S${seasonNumber}E${episodeNumber} 的中文翻译失败:`, error)
+      memoryCache.set(cacheKey, null)
+      setTimeout(() => {
+        if (memoryCache.get(cacheKey) === null) {
+          memoryCache.delete(cacheKey)
+        }
+      }, 5 * 60 * 1000)
+      return null
+    }).finally(() => {
+      pendingRequests.delete(cacheKey)
+    })
+
+    pendingRequests.set(cacheKey, requestPromise)
+    
+    return await requestPromise
+  } catch (error) {
+    memoryCache.set(cacheKey, null)
+    return null
+  }
+}
+
+/**
+ * 为单集异步加载翻译（不阻塞渲染）
+ * @param showId 电视剧ID
+ * @param seasonNumber 季度编号
+ * @param episodeNumber 集数编号
+ * @param onTranslationLoaded 翻译加载完成的回调
+ */
+export async function loadEpisodeTranslationAsync(
+  showId: number,
+  seasonNumber: number,
+  episodeNumber: number,
+  onTranslationLoaded: (translation: TranslationResult | null) => void
+) {
+  if (!showId) return
+  
+  const cacheKey = `episode_${showId}_${seasonNumber}_${episodeNumber}`
+  
+  // 立即检查缓存
+  if (memoryCache.has(cacheKey)) {
+    const cached = memoryCache.get(cacheKey) ?? null
+    onTranslationLoaded(cached)
+    return
+  }
+  
+  // 异步加载翻译
+  setTimeout(async () => {
+    const translation = await getEpisodeChineseTranslation(showId, seasonNumber, episodeNumber)
+    onTranslationLoaded(translation)
+  }, 0)
+}

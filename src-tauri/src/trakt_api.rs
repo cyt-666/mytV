@@ -109,6 +109,7 @@ pub struct ShowApi {
     pub season_trans: Entry,
     pub season_episodes: Entry,
     pub episode_details: Entry,
+    pub episode_trans: Entry,
     pub progress: Entry,
     pub watched: Entry,
     pub collected: Entry,

@@ -95,22 +95,15 @@
 
       <!-- 加载更多 -->
       <div v-if="hasMore && !loading" class="load-more-container">
-        <a-button 
-          v-if="!loadingMore"
-          @click="handleLoadMore"
-          type="outline"
-          size="large"
-        >
-          加载更多
-        </a-button>
-        <a-spin v-else :size="24" />
+        <div ref="loadTrigger" class="load-trigger"></div>
+        <a-spin v-if="loadingMore" :size="24" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
 import MediaGrid from '../components/MediaGrid.vue'
@@ -154,6 +147,31 @@ const historyItems = ref<HistoryMedia[]>([])
 const filterType = ref('')
 const dateRange = ref([])
 const stats = ref<UserStats | null>(null)
+
+const loadTrigger = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+const setupInfiniteScroll = () => {
+  if (observer) observer.disconnect()
+  
+  observer = new IntersectionObserver((entries) => {
+    const [entry] = entries
+    if (entry.isIntersecting) {
+      handleLoadMore()
+    }
+  }, { rootMargin: '400px', threshold: 0 })
+  
+  if (loadTrigger.value) {
+    observer.observe(loadTrigger.value)
+  }
+}
+
+watch(loadTrigger, (el) => {
+  if (el && observer) {
+    observer.disconnect()
+    observer.observe(el)
+  }
+})
 
 // 简单的本地统计
 const localStats = ref({
@@ -333,21 +351,6 @@ const loadHistory = async (isLoadMore = false) => {
     let attempt = 0
     const maxAttempts = 5 
     
-    const seenShows = new Set<number>()
-    const seenMovies = new Set<number>()
-    
-    if (isLoadMore) {
-      historyItems.value.forEach(item => {
-        if ('ids' in item && item.ids?.trakt) {
-          if (item.media_type === 'show') {
-             seenShows.add(item.ids.trakt)
-          } else if (item.media_type === 'movie') {
-             seenMovies.add(item.ids.trakt)
-          }
-        }
-      })
-    }
-
     while (addedCount === 0 && hasMore.value && attempt < maxAttempts) {
       attempt++
       
@@ -357,7 +360,7 @@ const loadHistory = async (isLoadMore = false) => {
         limit: limit
       })
       
-      if (results.length < limit) {
+      if (results.length === 0) {
         hasMore.value = false
       }
       
@@ -365,50 +368,21 @@ const loadHistory = async (isLoadMore = false) => {
       
       for (const item of results) {
         if (item.type === 'movie' && item.movie) {
-          const movieId = item.movie.ids?.trakt
-          if (movieId) {
-            if (seenMovies.has(movieId)) {
-              const existing = items.find(i => i.ids?.trakt === movieId && i.media_type === 'movie')
-              if (existing) {
-                existing.watch_count = (existing.watch_count || 1) + 1
-              } else {
-                const existingOld = historyItems.value.find(i => i.ids?.trakt === movieId && i.media_type === 'movie')
-                if (existingOld) {
-                  existingOld.watch_count = (existingOld.watch_count || 1) + 1
-                }
-              }
-            } else {
-              seenMovies.add(movieId)
-              item.movie.media_type = 'movie'
-              ;(item.movie as HistoryMedia).watch_count = 1
-              ;(item.movie as HistoryMedia).watched_at = item.watched_at
-              items.push(item.movie as HistoryMedia)
-            }
-          }
+          item.movie.media_type = 'movie'
+          ;(item.movie as HistoryMedia).watch_count = 1
+          ;(item.movie as HistoryMedia).watched_at = item.watched_at
+          items.push(item.movie as HistoryMedia)
         } else if (item.type === 'episode' && item.show) {
-          const showId = item.show.ids?.trakt
-          if (showId) {
-            if (seenShows.has(showId)) {
-              const existing = items.find(i => i.ids?.trakt === showId && i.media_type === 'show')
-              if (existing) {
-                existing.watch_count = (existing.watch_count || 1) + 1
-              } else {
-                const existingOld = historyItems.value.find(i => i.ids?.trakt === showId && i.media_type === 'show')
-                if (existingOld) {
-                  existingOld.watch_count = (existingOld.watch_count || 1) + 1
-                }
-              }
-            } else {
-              seenShows.add(showId)
-              item.show.media_type = 'show'
-              ;(item.show as HistoryMedia).watch_count = 1
-              ;(item.show as HistoryMedia).watched_at = item.watched_at
-              items.push(item.show as HistoryMedia)
-            }
+          item.show.media_type = 'show'
+          ;(item.show as HistoryMedia).watch_count = 1
+          ;(item.show as HistoryMedia).watched_at = item.watched_at
+          if (item.episode) {
+             ;(item.show as any).episode = item.episode
           }
+          items.push(item.show as HistoryMedia)
         }
       }
-      
+
       const now = new Date()
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const newThisMonthCount = results.filter(item => {
@@ -442,6 +416,21 @@ const loadHistory = async (isLoadMore = false) => {
   } finally {
     loading.value = false
     loadingMore.value = false
+    
+    // 如果还有更多数据，且 loadTrigger 仍在视口内（例如数据没填满屏幕），继续加载
+    if (hasMore.value && loadTrigger.value && observer) {
+      nextTick(() => {
+        // 由于 IntersectionObserver 无法直接检测当前是否可见，我们尝试重新 observe
+        // 或者简单判断：如果页面高度不够长，继续加载
+        const docHeight = document.documentElement.scrollHeight
+        const winHeight = window.innerHeight
+        
+        // 如果内容高度不足以产生滚动条，或者接近底部，继续加载
+        if (docHeight <= winHeight + 100) {
+          handleLoadMore()
+        }
+      })
+    }
   }
 }
 
@@ -463,9 +452,14 @@ onMounted(() => {
   } else if (!stats.value) {
     loadStats()
   }
+  setupInfiniteScroll()
 })
 
 onBeforeUnmount(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
   saveHistoryState()
 })
 </script>
@@ -612,6 +606,11 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   padding: 40px 20px;
+}
+
+.load-trigger {
+  height: 20px;
+  width: 100%;
 }
 
 @media (max-width: 768px) {

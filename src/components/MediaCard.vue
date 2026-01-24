@@ -67,6 +67,7 @@ import {
   loadMovieTranslationAsync, 
   loadShowTranslationAsync, 
   loadSeasonTranslationAsync,
+  loadEpisodeTranslationAsync,
   type TranslationResult 
 } from '../utils/translation'
 
@@ -89,6 +90,7 @@ let observer: IntersectionObserver | null = null
 
 // 翻译状态
 const translation = ref<TranslationResult | null>(null)
+const episodeTranslation = ref<TranslationResult | null>(null)
 const translationLoading = ref(false)
 
 // 计算属性
@@ -104,7 +106,13 @@ const runtime = computed(() => props.media.runtime)
 const displayYear = computed(() => {
   if (props.type === 'show') {
     const show = props.media as Show
-    if (show.latestSeason && show.latestSeason > 1) {
+    if ((show as any).episode) {
+      const ep = (show as any).episode
+      const epStr = `S${ep.season.toString().padStart(2, '0')}E${ep.number.toString().padStart(2, '0')}`
+      const epTitle = episodeTranslation.value?.title || ep.title
+      return epTitle ? `${epStr} · ${epTitle}` : epStr
+    }
+        if (show.latestSeason && show.latestSeason > 1) {
       return `第${show.latestSeason}季`
     }
   } else if (props.type === 'season') {
@@ -205,6 +213,19 @@ const loadTranslation = async () => {
         translation.value = translationData
         translationLoading.value = false
       })
+      
+      // 如果有单集信息，额外加载单集翻译
+      const ep = (props.media as any).episode
+      if (ep && props.media.ids?.trakt) {
+        loadEpisodeTranslationAsync(
+          props.media.ids.trakt, 
+          ep.season, 
+          ep.number, 
+          (trans: TranslationResult | null) => {
+            episodeTranslation.value = trans
+          }
+        )
+      }
     } else if (props.type === 'season') {
       const showId = props.media.ids?.trakt
       const seasonNumber = (props.media as any).season_number
@@ -407,6 +428,9 @@ onUnmounted(() => {
   font-size: 13px;
   color: #86909c;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .media-meta {

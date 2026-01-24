@@ -179,3 +179,13 @@ pub struct ShowProgressSummary {
     pub completed: u32,
     pub last_watched_at: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EpisodeTranslation {
+    pub title: Option<String>,
+    pub overview: Option<String>,
+    pub language: Option<String>,
+    pub country: Option<String>,
+}
+
+pub type EpisodeTranslations = Vec<EpisodeTranslation>;

@@ -1,310 +1,315 @@
 {
-    "auth":{
-        "authorize":{
-            "uri":"/oauth/authorize",
-            "method":"GET",
-            "params":{
-                "client_id":"",
-                "redirect_uri":"",
-                "response_type":"code"
+    "auth": {
+        "authorize": {
+            "uri": "/oauth/authorize",
+            "method": "GET",
+            "params": {
+                "client_id": "",
+                "redirect_uri": "",
+                "response_type": "code"
             }
         },
-        "get_token":{
-            "uri":"/oauth/token",
-            "content-type":"application/json",
-            "method":"POST",
-            "body":{
-                "client_id":"",
-                "client_secret":"",
-                "redirect_uri":"",
-                "code":"",
-                "grant_type":"authorization_code"
+        "get_token": {
+            "uri": "/oauth/token",
+            "content-type": "application/json",
+            "method": "POST",
+            "body": {
+                "client_id": "",
+                "client_secret": "",
+                "redirect_uri": "",
+                "code": "",
+                "grant_type": "authorization_code"
             }
         },
-        "refresh_token":{
-            "uri":"/oauth/token",
-            "content-type":"application/json",
-            "method":"POST",
-            "body":{
-                "refresh_token":"",
-                "client_id":"",
-                "client_secret":"",
-                "redirect_uri":"",
-                "grant_type":"refresh_token"
+        "refresh_token": {
+            "uri": "/oauth/token",
+            "content-type": "application/json",
+            "method": "POST",
+            "body": {
+                "refresh_token": "",
+                "client_id": "",
+                "client_secret": "",
+                "redirect_uri": "",
+                "grant_type": "refresh_token"
             }
         },
-        "revoke_token":{
-            "uri":"/oauth/revoke",
-            "content-type":"application/json",
-            "method":"POST",
-            "body":{
-                "token":"",
-                "client_id":"",
-                "client_secret":""
-            }
-        }
-    },
-    "recommand":{
-        "movies":{
-            "uri":"/recommendations/movies",
-            "method":"GET",
-            "params":{
-                "ignore_collecte":"true",
-                "ignore_watched":"true"
-            }
-        },
-        "shows":{
-            "uri":"/recommendations/shows",
-            "method":"GET",
-            "params":{
-                "ignore_collecte":"true",
-                "ignore_watched":"true"
+        "revoke_token": {
+            "uri": "/oauth/revoke",
+            "content-type": "application/json",
+            "method": "POST",
+            "body": {
+                "token": "",
+                "client_id": "",
+                "client_secret": ""
             }
         }
     },
-    "search":{
-        "text":{
-            "uri":"/search/movie,show",
-            "method":"GET",
-            "params":{
-                "query":""
+    "recommand": {
+        "movies": {
+            "uri": "/recommendations/movies",
+            "method": "GET",
+            "params": {
+                "ignore_collecte": "true",
+                "ignore_watched": "true"
+            }
+        },
+        "shows": {
+            "uri": "/recommendations/shows",
+            "method": "GET",
+            "params": {
+                "ignore_collecte": "true",
+                "ignore_watched": "true"
             }
         }
     },
-    "user":{
-        "profile":{
-            "uri":"/users/settings",
-            "method":"GET",
-            "params":{}
-        },
-        "watched":{
-            "uri":"/users/id/watched/type",
-            "method":"GET",
-            "params":{}
-        },
-        "stats":{
-            "uri":"/users/id/stats",
-            "method":"GET",
-            "params":{}
-        },
-        "collection":{
-            "uri":"/users/id/collection/type",
-            "method":"GET",
-            "params":{}
-        },
-        "watchlist":{
-            "uri":"/users/id/watchlist/type",
-            "method":"GET",
-            "params":{}
-        },
-        "history":{
-            "uri":"/users/id/history",
-            "method":"GET",
-            "params":{}
-        }
-    },
-    "sync":{
-        "add_to_collection":{
-            "uri":"/sync/collection",
-            "method":"POST",
-            "content-type":"application/json",
-            "body":{}
-        },
-        "remove_from_collection":{
-            "uri":"/sync/collection/remove",
-            "method":"POST",
-            "content-type":"application/json",
-            "body":{}
-        },
-        "add_to_watchlist":{
-            "uri":"/sync/watchlist",
-            "method":"POST",
-            "content-type":"application/json",
-            "body":{}
-        },
-        "remove_from_watchlist":{
-            "uri":"/sync/watchlist/remove",
-            "method":"POST",
-            "content-type":"application/json",
-            "body":{}
-        },
-        "add_to_history":{
-            "uri":"/sync/history",
-            "method":"POST",
-            "content-type":"application/json",
-            "body":{}
-        }
-    },
-    "movie":{
-        "trending":{
-            "uri":"/movies/trending",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
-            }
-        },
-        "popular":{
-            "uri":"/movies/popular",
-            "method":"GET",
-            "params":{
-                "extended":"full"
-            }
-        },
-        "anticipated":{
-            "uri":"/movies/anticipated",
-            "method":"GET",
-            "params":{
-                "extended":"full"
-            }
-        },
-        "details":{
-            "uri":"/movies/id",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
-            }
-        },
-        "trans":{
-            "uri":"/movies/id/translations/language",
-            "method":"GET",
-            "params":{}
-        },
-        "watched":{
-            "uri":"/movies/watched/period",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
-            }
-        },
-        "collected":{
-            "uri":"/movies/collected/period",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
+    "search": {
+        "text": {
+            "uri": "/search/movie,show",
+            "method": "GET",
+            "params": {
+                "query": ""
             }
         }
     },
-    "shows":{
-        "trending":{
-            "uri":"/shows/trending",
-            "method":"GET",
-            "params":{}
+    "user": {
+        "profile": {
+            "uri": "/users/settings",
+            "method": "GET",
+            "params": {}
         },
-        "popular":{
-            "uri":"/shows/popular",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "watched": {
+            "uri": "/users/id/watched/type",
+            "method": "GET",
+            "params": {}
+        },
+        "stats": {
+            "uri": "/users/id/stats",
+            "method": "GET",
+            "params": {}
+        },
+        "collection": {
+            "uri": "/users/id/collection/type",
+            "method": "GET",
+            "params": {}
+        },
+        "watchlist": {
+            "uri": "/users/id/watchlist/type",
+            "method": "GET",
+            "params": {}
+        },
+        "history": {
+            "uri": "/users/id/history",
+            "method": "GET",
+            "params": {}
+        }
+    },
+    "sync": {
+        "add_to_collection": {
+            "uri": "/sync/collection",
+            "method": "POST",
+            "content-type": "application/json",
+            "body": {}
+        },
+        "remove_from_collection": {
+            "uri": "/sync/collection/remove",
+            "method": "POST",
+            "content-type": "application/json",
+            "body": {}
+        },
+        "add_to_watchlist": {
+            "uri": "/sync/watchlist",
+            "method": "POST",
+            "content-type": "application/json",
+            "body": {}
+        },
+        "remove_from_watchlist": {
+            "uri": "/sync/watchlist/remove",
+            "method": "POST",
+            "content-type": "application/json",
+            "body": {}
+        },
+        "add_to_history": {
+            "uri": "/sync/history",
+            "method": "POST",
+            "content-type": "application/json",
+            "body": {}
+        }
+    },
+    "movie": {
+        "trending": {
+            "uri": "/movies/trending",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
             }
         },
-        "anticipated":{
-            "uri":"/shows/anticipated",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "popular": {
+            "uri": "/movies/popular",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "details":{
-            "uri":"/shows/id",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
+        "anticipated": {
+            "uri": "/movies/anticipated",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "trans":{
-            "uri":"/shows/id/translations/language",
-            "method":"GET",
-            "params":{}
-        },
-        "seasons":{
-            "uri":"/shows/id/seasons",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "details": {
+            "uri": "/movies/id",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
             }
         },
-        "season_trans":{
-            "uri":"/shows/id/seasons/season_number/translations/language",
-            "method":"GET",
-            "params":{}
+        "trans": {
+            "uri": "/movies/id/translations/language",
+            "method": "GET",
+            "params": {}
         },
-        "season_episodes":{
-            "uri":"/shows/id/seasons/season_number",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "watched": {
+            "uri": "/movies/watched/period",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
             }
         },
-        "episode_details":{
-            "uri":"/shows/id/seasons/season_number/episodes/episode_number",
-            "method":"GET",
-            "params":{
-                "extended":"full"
-            }
-        },
-        "progress":{
-            "uri":"/shows/id/progress/watched",
-            "method":"GET",
-            "params":{
-                "extended":"full"
-            }
-        },
-        "watched":{
-            "uri":"/shows/watched/period",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
-            }
-        },
-        "collected":{
-            "uri":"/shows/collected/period",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
+        "collected": {
+            "uri": "/movies/collected/period",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
             }
         }
     },
-    "calendars":{
-        "movies":{
-            "uri":"/calendars/all/movies/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+    "shows": {
+        "trending": {
+            "uri": "/shows/trending",
+            "method": "GET",
+            "params": {}
+        },
+        "popular": {
+            "uri": "/shows/popular",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "shows":{
-            "uri":"/calendars/all/shows/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "anticipated": {
+            "uri": "/shows/anticipated",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "my_shows":{
-            "uri":"/calendars/my/shows/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full,images"
+        "details": {
+            "uri": "/shows/id",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
             }
         },
-        "new_shows":{
-            "uri":"/calendars/all/shows/new/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "trans": {
+            "uri": "/shows/id/translations/language",
+            "method": "GET",
+            "params": {}
+        },
+        "seasons": {
+            "uri": "/shows/id/seasons",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "season_premieres":{
-            "uri":"/calendars/all/shows/premieres/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "season_trans": {
+            "uri": "/shows/id/seasons/season_number/translations/language",
+            "method": "GET",
+            "params": {}
+        },
+        "season_episodes": {
+            "uri": "/shows/id/seasons/season_number",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         },
-        "dvd":{
-            "uri":"/calendars/all/dvd/start_date/days",
-            "method":"GET",
-            "params":{
-                "extended":"full"
+        "episode_details": {
+            "uri": "/shows/id/seasons/season_number/episodes/episode_number",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "progress": {
+            "uri": "/shows/id/progress/watched",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "watched": {
+            "uri": "/shows/watched/period",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
+            }
+        },
+        "collected": {
+            "uri": "/shows/collected/period",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
+            }
+        },
+        "episode_trans": {
+            "uri": "/shows/id/seasons/season_number/episodes/episode_number/translations/language",
+            "method": "GET",
+            "params": {}
+        }
+    },
+    "calendars": {
+        "movies": {
+            "uri": "/calendars/all/movies/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "shows": {
+            "uri": "/calendars/all/shows/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "my_shows": {
+            "uri": "/calendars/my/shows/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full,images"
+            }
+        },
+        "new_shows": {
+            "uri": "/calendars/all/shows/new/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "season_premieres": {
+            "uri": "/calendars/all/shows/premieres/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full"
+            }
+        },
+        "dvd": {
+            "uri": "/calendars/all/dvd/start_date/days",
+            "method": "GET",
+            "params": {
+                "extended": "full"
             }
         }
     }

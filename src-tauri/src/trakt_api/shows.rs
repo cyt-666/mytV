@@ -581,3 +581,22 @@ pub async fn season_trans(app: AppHandle, id: u32, season: u32, language: String
         Err(result.unwrap_err())
     }
 }
+#[command]
+pub async fn episode_trans(app: AppHandle, id: u32, season: u32, episode: u32, language: String) -> Result<crate::model::shows::EpisodeTranslations, u16> {
+    let client = app.state::<Mutex<ApiClient>>();
+    let mut client = client.lock().await;
+    let mut uri = API.shows.episode_trans.uri.clone();
+    
+    uri = uri.replace("id", &id.to_string())
+             .replace("season_number", &season.to_string())
+             .replace("episode_number", &episode.to_string())
+             .replace("language", &language);
+    
+    let result = client.req_api(&app, API.shows.episode_trans.method.as_str(), uri, None, None, None, None, true).await;
+    if let Ok(result) = result {
+        let translations = serde_json::from_value::<crate::model::shows::EpisodeTranslations>(result).unwrap();
+        Ok(translations)
+    } else {
+        Err(result.unwrap_err())
+    }
+}

@@ -2,7 +2,7 @@ use tauri::{command, AppHandle, Manager};
 use log::debug;
 use crate::model::translation::TranslationData;
 use crate::model::movie::MovieTranslations;
-use crate::model::shows::{ShowTranslations, SeasonTranslations};
+use crate::model::shows::{ShowTranslations, SeasonTranslations, EpisodeTranslations};
 use crate::db::{DbPool, cache};
 
 #[command]
@@ -78,6 +78,35 @@ pub async fn get_season_translation_cached(app: AppHandle, show_id: u32, season:
     match super::shows::season_trans(app.clone(), show_id, season, "zh".to_string()).await {
         Ok(translations) => {
             let translation_data = process_season_translations(translations);
+            
+            if let Some(data) = &translation_data {
+                if let Some(pool) = app.try_state::<DbPool>() {
+                    cache::set_translation_cache(&pool.0, &type_key, show_id, &serde_json::to_value(data).unwrap()).await;
+                }
+            }
+            
+            Ok(translation_data)
+        }
+        Err(code) => Err(code)
+    }
+}
+
+
+#[command]
+pub async fn get_episode_translation_cached(app: AppHandle, show_id: u32, season: u32, episode: u32) -> Result<Option<TranslationData>, u16> {
+    let type_key = format!("episode_{}_{}", season, episode);
+    
+    if let Some(pool) = app.try_state::<DbPool>() {
+        if let Some(data) = cache::get_translation_cache(&pool.0, &type_key, show_id).await {
+            if let Ok(translation) = serde_json::from_value::<TranslationData>(data) {
+                return Ok(Some(translation));
+            }
+        }
+    }
+    
+    match super::shows::episode_trans(app.clone(), show_id, season, episode, "zh".to_string()).await {
+        Ok(translations) => {
+            let translation_data = process_episode_translations(translations);
             
             if let Some(data) = &translation_data {
                 if let Some(pool) = app.try_state::<DbPool>() {
@@ -170,6 +199,26 @@ fn process_show_translations(translations: ShowTranslations) -> Option<Translati
 }
 
 fn process_season_translations(translations: SeasonTranslations) -> Option<TranslationData> {
+    if translations.is_empty() {
+        return None;
+    }
+    
+    let preferred = translations.iter()
+        .find(|t| t.country.as_deref() == Some("cn"))
+        .or_else(|| translations.iter().find(|t| t.country.as_deref() == Some("tw")))
+        .or_else(|| translations.iter().find(|t| t.country.as_deref() == Some("hk")))
+        .or_else(|| translations.first());
+    
+    preferred.map(|t| TranslationData {
+        title: t.title.clone(),
+        overview: t.overview.clone(),
+        tagline: None,
+        updated_at: cache::get_timestamp() as u64,
+    })
+}
+
+
+fn process_episode_translations(translations: EpisodeTranslations) -> Option<TranslationData> {
     if translations.is_empty() {
         return None;
     }
