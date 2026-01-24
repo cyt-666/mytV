@@ -37,5 +37,6 @@ base64 = "0.22.1"
 tauri-plugin-sql = "2"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-native-tls", "sqlite"] }
 chrono = { version = "0.4.43", features = ["serde"] }
+window-vibrancy = "0.5"
 
 
