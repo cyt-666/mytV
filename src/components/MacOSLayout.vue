@@ -1,0 +1,411 @@
+<template>
+  <div class="macos-layout">
+    <!-- Sidebar (Vibrant Material) -->
+    <aside class="macos-sidebar">
+      <!-- Traffic Lights Drag Region -->
+      <div class="window-drag-region" data-tauri-drag-region></div>
+
+      <!-- Search Field -->
+      <div class="sidebar-search-wrapper">
+        <div class="macos-search-input">
+          <icon-search class="search-icon" />
+          <input 
+            v-model="searchQuery" 
+            placeholder="Search" 
+            @keydown.enter="handleSearch"
+          />
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <div class="sidebar-scroll-area">
+        <!-- Section: Discovery -->
+        <div class="sidebar-group">
+          <div class="group-label">Discovery</div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/') }"
+            @click="navTo('/')"
+          >
+            <icon-home class="item-icon" />
+            <span class="item-label">Home</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/movies') }"
+            @click="navTo('/movies')"
+          >
+            <icon-star class="item-icon" />
+            <span class="item-label">Movies</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/shows') }"
+            @click="navTo('/shows')"
+          >
+            <icon-play-circle class="item-icon" />
+            <span class="item-label">TV Shows</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/browse') }"
+            @click="navTo('/browse')"
+          >
+            <icon-apps class="item-icon" />
+            <span class="item-label">Browse</span>
+          </div>
+        </div>
+
+        <!-- Section: Library -->
+        <div class="sidebar-group">
+          <div class="group-label">Library</div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/up-next') }"
+            @click="navTo('/up-next')"
+          >
+            <icon-clock-circle class="item-icon" />
+            <span class="item-label">Up Next</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/watchlist') }"
+            @click="navTo('/watchlist')"
+          >
+            <icon-bookmark class="item-icon" />
+            <span class="item-label">Watchlist</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/history') }"
+            @click="navTo('/history')"
+          >
+            <icon-history class="item-icon" />
+            <span class="item-label">History</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/collection') }"
+            @click="navTo('/collection')"
+          >
+            <icon-folder class="item-icon" />
+            <span class="item-label">Collection</span>
+          </div>
+          <div 
+            class="sidebar-item" 
+            :class="{ active: isActive('/calendar') }"
+            @click="navTo('/calendar')"
+          >
+            <icon-calendar class="item-icon" />
+            <span class="item-label">Calendar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Profile (Bottom) -->
+      <div class="sidebar-footer">
+        <div class="user-profile-card" @click="handleProfileClick">
+           <a-avatar :size="32" class="user-avatar">
+              <img v-if="avatarUrl" :src="avatarUrl" referrerpolicy="no-referrer"/>
+              <icon-user v-else />
+           </a-avatar>
+           <div class="user-info">
+             <div class="user-name">{{ userInfo?.username || 'Guest' }}</div>
+             <div class="user-status">{{ isLoggedIn ? 'Online' : 'Click to Login' }}</div>
+           </div>
+           <icon-settings class="settings-icon" @click.stop="navTo('/settings')" />
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="macos-main">
+      <!-- Toolbar / Breadcrumbs could go here if needed, but keeping it clean for now -->
+       <div class="content-scroll-container" ref="contentRef">
+          <router-view v-slot="{ Component, route }">
+            <keep-alive v-if="shouldKeepAlive(route)">
+              <component :is="Component" :key="route.path" />
+            </keep-alive>
+            <component v-else :is="Component" :key="route.fullPath" />
+          </router-view>
+       </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, inject, watch, nextTick } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import type { Ref } from 'vue';
+import type { User } from '../types/api';
+import { 
+  IconHome, IconStar, IconPlayCircle, IconApps, 
+  IconClockCircle, IconBookmark, IconHistory, IconFolder, IconCalendar,
+  IconSearch, IconUser, IconSettings
+} from '@arco-design/web-vue/es/icon';
+
+const router = useRouter();
+const route = useRoute();
+const contentRef = ref();
+
+// Injected State
+const userInfo = inject<Ref<User | null>>('userInfo', ref(null));
+const isLoggedIn = inject<Ref<boolean>>('isLoggedIn', ref(false));
+const authActions = inject<any>('authActions', {});
+const { login, avatarUrl } = authActions;
+
+const searchQuery = ref('');
+
+const navTo = (path: string) => {
+  router.push(path);
+};
+
+const isActive = (path: string) => {
+  if (path === '/' && route.path === '/') return true;
+  if (path !== '/' && route.path.startsWith(path)) return true;
+  return false;
+};
+
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    router.push({ name: 'search', query: { q: searchQuery.value.trim() } });
+  }
+};
+
+const handleProfileClick = () => {
+  if (isLoggedIn.value) {
+    router.push('/profile');
+  } else {
+    login();
+  }
+};
+
+const shouldKeepAlive = (route: any) => {
+  if (route.path.startsWith('/movie/') || route.path.startsWith('/show/')) return false;
+  return ['/', '/search', '/watchlist', '/collection', '/history', '/profile', '/browse', '/movies', '/shows'].includes(route.path);
+};
+
+// Scroll to top on route change
+watch(route, async () => {
+  await nextTick();
+  if (contentRef.value) {
+    contentRef.value.scrollTop = 0;
+  }
+});
+</script>
+
+<style scoped>
+.macos-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.macos-sidebar {
+  width: 260px;
+  background-color: transparent;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  user-select: none;
+  padding-bottom: 16px;
+}
+
+.window-drag-region {
+  height: 52px; /* Top area for traffic lights */
+  width: 100%;
+  -webkit-app-region: drag;
+}
+
+/* Search */
+.sidebar-search-wrapper {
+  padding: 0 16px 16px 16px;
+}
+
+.macos-search-input {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  transition: background 0.2s, box-shadow 0.2s;
+  border: 1px solid transparent;
+}
+
+.macos-search-input:focus-within {
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3); /* macOS Focus Ring */
+}
+
+.search-icon {
+  color: #888;
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.macos-search-input input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  font-size: 13px;
+  color: #333;
+  outline: none;
+}
+.macos-search-input input::placeholder {
+  color: #999;
+}
+
+/* Menu */
+.sidebar-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px;
+}
+
+.sidebar-group {
+  margin-bottom: 24px;
+}
+
+.group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 6px;
+  padding-left: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  margin-bottom: 2px;
+  border-radius: 6px;
+  cursor: default;
+  color: #333;
+  transition: background 0.15s;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar-item.active {
+  background-color: rgba(0, 0, 0, 0.08); /* macOS Active State (Inactive Window) */
+  /* If window active: background-color: #007aff; color: #fff; */
+  /* Since we can't easily detect window focus state in CSS, we use a neutral active state */
+  color: #000;
+  font-weight: 500;
+}
+
+.item-icon {
+  font-size: 16px;
+  margin-right: 10px;
+  opacity: 0.8;
+}
+
+.sidebar-item.active .item-icon {
+  opacity: 1;
+  color: #007aff;
+}
+
+.item-label {
+  font-size: 13px;
+}
+
+/* Footer */
+.sidebar-footer {
+  padding: 12px 16px 0 16px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.user-profile-card {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user-profile-card:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+.user-avatar {
+  background-color: #ccc;
+  flex-shrink: 0;
+}
+
+.user-info {
+  margin-left: 10px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-status {
+  font-size: 11px;
+  color: #888;
+}
+
+.settings-icon {
+  color: #999;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+}
+.settings-icon:hover {
+  background: rgba(0,0,0,0.1);
+  color: #333;
+}
+
+/* Main Content */
+.macos-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  position: relative;
+}
+
+.content-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar tweaks */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+</style>
