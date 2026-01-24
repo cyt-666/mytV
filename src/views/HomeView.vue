@@ -290,9 +290,10 @@ onMounted(() => {
   box-shadow: 0 20px 40px rgba(0,0,0,0.15);
   z-index: 10;
 }
-.hero-carousel { height: 500px; }
+.hero-carousel { height: 400px; }
 .hero-slide {
   height: 100%;
+  width: 100%;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -360,8 +361,9 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .hero-slide { height: 400px; }
+  .hero-slide { height: 280px; }
   .hero-content { padding: 0 24px 40px 24px; }
   .hero-title { font-size: 32px; }
+  :deep(.page-container) { padding: 0 20px 20px 20px; }
 }
 </style>
