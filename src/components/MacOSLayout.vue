@@ -132,6 +132,9 @@
 
     <!-- Main Content -->
     <main class="macos-main">
+      <!-- Main Content Drag Region -->
+      <div class="main-drag-region" data-tauri-drag-region></div>
+
       <div 
         v-if="showGlobalBackButton" 
         class="global-back-btn" 
@@ -418,6 +421,16 @@ watch(route, async () => {
   background: #fff;
   position: relative;
   min-width: 0;
+}
+
+.main-drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  z-index: 5;
+  -webkit-app-region: drag;
 }
 
 .content-scroll-container {
