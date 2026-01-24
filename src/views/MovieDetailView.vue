@@ -56,7 +56,7 @@
               </a-button>
               <a-button 
                 size="large" 
-                :class="['action-btn', { 'is-active': isInCollection }]"
+                :class="['action-btn', 'collection-btn', { 'is-active': isInCollection }]"
                 :type="isInCollection ? 'primary' : 'secondary'"
                 @click="handleToggleCollection"
                 :loading="actionLoading.collection"
@@ -253,7 +253,6 @@ const fetchMovieDetails = async () => {
 
   try {
     // 立即获取电影详情，不等待翻译
-    // 后端实现了 SWR 策略，如果缓存存在会立即返回，旧数据会触发后台更新事件
     const details = await invoke<MovieDetails>("movie_details", { id: numericId })
     movieDetails.value = details
     
@@ -274,7 +273,6 @@ const fetchMovieDetails = async () => {
 const loadTranslationAsync = async (movieId: number) => {
   translationLoading.value = true
   try {
-    // 在下一个事件循环中加载翻译，确保页面先渲染
     await new Promise(resolve => setTimeout(resolve, 0))
     
     const translation = await getMovieChineseTranslation(movieId)
@@ -283,7 +281,6 @@ const loadTranslationAsync = async (movieId: number) => {
     console.log('翻译加载完成:', translation)
   } catch (error) {
     console.warn('翻译加载失败:', error)
-    // 翻译失败不影响页面功能
   } finally {
     translationLoading.value = false
   }
@@ -536,6 +533,18 @@ const checkUserStatus = async () => {
   justify-content: center;
   gap: 8px;
   font-weight: 600;
+}
+
+/* 覆盖 Arco 默认样式，实现紫色收藏按钮 */
+.action-btn.is-active.collection-btn {
+  background-color: #722ed1 !important;
+  border-color: #722ed1 !important;
+  color: white !important;
+}
+
+.action-btn.is-active.collection-btn:hover {
+  background-color: #5b25a8 !important;
+  border-color: #5b25a8 !important;
 }
 
 .action-btn.is-active {

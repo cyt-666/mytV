@@ -9,6 +9,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' }
   },
   {
+    path: '/movies',
+    name: 'movies',
+    component: () => import('../views/MoviesView.vue'),
+    meta: { title: '电影' }
+  },
+  {
+    path: '/shows',
+    name: 'shows',
+    component: () => import('../views/ShowsView.vue'),
+    meta: { title: '电视剧' }
+  },
+  {
+    path: '/browse',
+    name: 'browse',
+    component: () => import('../views/BrowseView.vue'),
+    meta: { title: '发现' }
+  },
+  {
     path: '/search',
     name: 'search',
     component: () => import('../views/SearchView.vue'),
@@ -91,4 +109,4 @@ router.beforeEach((to) => {
   document.title = `${to.meta.title} - MyTV`
 })
 
-export default router 
+export default router

@@ -42,8 +42,14 @@ pub async fn show_trending(app: AppHandle) -> Result<Vec<ShowTrending>, u16> {
 }
 
 #[command]
-pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<ShowTrending>, u16> {
-    let cache_key = format!("api_show_trending_p{}_l{}", page, limit);
+pub async fn show_trending_page(
+    app: AppHandle, 
+    page: u32, 
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
+) -> Result<Vec<ShowTrending>, u16> {
+    let cache_key = format!("api_show_trending_p{}_l{}_g{:?}_c{:?}", page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -55,8 +61,17 @@ pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result
 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
+    
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+    
     let result = client
-        .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), None, None, Some(limit), Some(page), true)
+        .req_api(&app, API.shows.trending.method.as_str(), API.shows.trending.uri.clone(), Some(params), None, Some(limit), Some(page), true)
         .await;
         
     match result {
@@ -72,8 +87,14 @@ pub async fn show_trending_page(app: AppHandle, page: u32, limit: u32) -> Result
 }
 
 #[command]
-pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Show>, u16> {
-    let cache_key = format!("api_show_popular_p{}_l{}", page, limit);
+pub async fn show_popular_page(
+    app: AppHandle, 
+    page: u32, 
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
+) -> Result<Vec<Show>, u16> {
+    let cache_key = format!("api_show_popular_p{}_l{}_g{:?}_c{:?}", page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -85,8 +106,17 @@ pub async fn show_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<
 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
+    
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+    
     let result = client
-        .req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), None, None, Some(limit), Some(page), true)
+        .req_api(&app, API.shows.popular.method.as_str(), API.shows.popular.uri.clone(), Some(params), None, Some(limit), Some(page), true)
         .await;
         
     match result {
@@ -269,7 +299,6 @@ pub async fn get_season_episodes(app: AppHandle, id: u32, season: u32) -> Result
 
     if let Some(pool) = app.try_state::<DbPool>() {
         // 复用 get_media_cache，但传入自定义的 ID
-        // ... (注释略)
         
         if let Some(result) = cache::get_media_cache(&pool.0, &format!("season_{}", id), season).await {
             if let Ok(episodes) = serde_json::from_value::<Vec<Episode>>(result.data) {
@@ -334,8 +363,6 @@ async fn fetch_and_cache_season_episodes(app: &AppHandle, id: u32, season: u32) 
 pub async fn get_episode_details(app: AppHandle, id: u32, season: u32, episode: u32) -> Result<Episode, u16> {
     let mut cache_data = None;
     let mut should_fetch = true;
-    // 构造缓存 Key: episode_{id}_{season}，且 trakt_id 为 episode_num
-    // 最终 ID: episode_{id}_{season}_{episode}
     
     if let Some(pool) = app.try_state::<DbPool>() {
         let type_prefix = format!("episode_{}_{}", id, season);
@@ -423,9 +450,11 @@ pub async fn show_watched_period(
     app: AppHandle,
     period: String,
     page: u32,
-    limit: u32
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
 ) -> Result<Vec<ShowWatched>, u16> {
-    let cache_key = format!("api_show_watched_{}_p{}_l{}", period, page, limit);
+    let cache_key = format!("api_show_watched_{}_p{}_l{}_g{:?}_c{:?}", period, page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -441,12 +470,20 @@ pub async fn show_watched_period(
     let mut uri = API.shows.watched.uri.clone();
     uri = uri.replace("period", &period);
     
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+    
     let result = client
         .req_api(
             &app,
             API.shows.watched.method.as_str(),
             uri,
-            None,
+            Some(params),
             None,
             Some(limit),
             Some(page),
@@ -473,9 +510,11 @@ pub async fn show_collected_period(
     app: AppHandle,
     period: String,
     page: u32,
-    limit: u32
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
 ) -> Result<Vec<ShowCollected>, u16> {
-    let cache_key = format!("api_show_collected_{}_p{}_l{}", period, page, limit);
+    let cache_key = format!("api_show_collected_{}_p{}_l{}_g{:?}_c{:?}", period, page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -491,12 +530,20 @@ pub async fn show_collected_period(
     let mut uri = API.shows.collected.uri.clone();
     uri = uri.replace("period", &period);
     
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+    
     let result = client
         .req_api(
             &app,
             API.shows.collected.method.as_str(),
             uri,
-            None,
+            Some(params),
             None,
             Some(limit),
             Some(page),

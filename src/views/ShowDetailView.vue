@@ -56,7 +56,7 @@
               </a-button>
               <a-button 
                 size="large" 
-                :class="['action-btn', { 'is-active': isInCollection }]"
+                :class="['action-btn', 'collection-btn', { 'is-active': isInCollection }]"
                 :type="isInCollection ? 'primary' : 'secondary'"
                 @click="handleToggleCollection"
                 :loading="actionLoading.collection"
@@ -604,10 +604,6 @@ const handleSeasonCollection = async (season: any, event: Event) => {
   if (!season.ids?.trakt) return
   
   try {
-    // 简单实现：总是添加（Trakt API幂等，如果已存在不会重复添加，或者需要先检查状态）
-    // 由于检查状态需要请求API，这里简化为只提供添加功能，或者假定未添加
-    // 更好的方式是维护一个 Set<seasonId> collectedSeasons
-    
     await invoke('add_to_collection', {
       mediaType: 'season',
       traktId: season.ids.trakt
@@ -787,6 +783,18 @@ const checkUserStatus = async () => {
   justify-content: center;
   gap: 8px;
   font-weight: 600;
+}
+
+/* 覆盖 Arco 默认样式，实现紫色收藏按钮 */
+.action-btn.is-active.collection-btn {
+  background-color: #722ed1 !important;
+  border-color: #722ed1 !important;
+  color: white !important;
+}
+
+.action-btn.is-active.collection-btn:hover {
+  background-color: #5b25a8 !important;
+  border-color: #5b25a8 !important;
 }
 
 .action-btn.is-active {
@@ -1281,4 +1289,10 @@ const checkUserStatus = async () => {
   0%, 100% { opacity: 0; }
   50% { opacity: 1; }
 }
-</style> 
+
+.show-detail-content {
+  position: relative;
+  min-height: 100vh;
+  color: white;
+}
+</style>

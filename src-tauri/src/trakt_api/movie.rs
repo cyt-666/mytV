@@ -46,8 +46,14 @@ pub async fn movie_trending(app: AppHandle) -> Result<Vec<MovieTrending>, u16> {
 }
 
 #[command]
-pub async fn movie_trending_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<MovieTrending>, u16> {
-    let cache_key = format!("api_movie_trending_p{}_l{}", page, limit);
+pub async fn movie_trending_page(
+    app: AppHandle, 
+    page: u32, 
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
+) -> Result<Vec<MovieTrending>, u16> {
+    let cache_key = format!("api_movie_trending_p{}_l{}_g{:?}_c{:?}", page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -59,8 +65,17 @@ pub async fn movie_trending_page(app: AppHandle, page: u32, limit: u32) -> Resul
 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
+    
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+
     let result = client
-        .req_api(&app, API.movie.trending.method.as_str(), API.movie.trending.uri.clone(), None, None, Some(limit), Some(page), true)
+        .req_api(&app, API.movie.trending.method.as_str(), API.movie.trending.uri.clone(), Some(params), None, Some(limit), Some(page), true)
         .await;
         
     match result {
@@ -76,8 +91,14 @@ pub async fn movie_trending_page(app: AppHandle, page: u32, limit: u32) -> Resul
 }
 
 #[command]
-pub async fn movie_popular_page(app: AppHandle, page: u32, limit: u32) -> Result<Vec<Movie>, u16> {
-    let cache_key = format!("api_movie_popular_p{}_l{}", page, limit);
+pub async fn movie_popular_page(
+    app: AppHandle, 
+    page: u32, 
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
+) -> Result<Vec<Movie>, u16> {
+    let cache_key = format!("api_movie_popular_p{}_l{}_g{:?}_c{:?}", page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -89,8 +110,17 @@ pub async fn movie_popular_page(app: AppHandle, page: u32, limit: u32) -> Result
 
     let client = app.state::<Mutex<ApiClient>>();
     let mut client = client.lock().await;
+    
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+
     let result = client
-        .req_api(&app, API.movie.popular.method.as_str(), API.movie.popular.uri.clone(), None, None, Some(limit), Some(page), true)
+        .req_api(&app, API.movie.popular.method.as_str(), API.movie.popular.uri.clone(), Some(params), None, Some(limit), Some(page), true)
         .await;
         
     match result {
@@ -226,9 +256,11 @@ pub async fn movie_watched_period(
     app: AppHandle,
     period: String,
     page: u32,
-    limit: u32
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
 ) -> Result<Vec<MovieWatched>, u16> {
-    let cache_key = format!("api_movie_watched_{}_p{}_l{}", period, page, limit);
+    let cache_key = format!("api_movie_watched_{}_p{}_l{}_g{:?}_c{:?}", period, page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -244,12 +276,20 @@ pub async fn movie_watched_period(
     let mut uri = API.movie.watched.uri.clone();
     uri = uri.replace("period", &period);
     
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
+    
     let result = client
         .req_api(
             &app,
             API.movie.watched.method.as_str(),
             uri,
-            None,
+            Some(params),
             None,
             Some(limit),
             Some(page),
@@ -276,9 +316,11 @@ pub async fn movie_collected_period(
     app: AppHandle,
     period: String,
     page: u32,
-    limit: u32
+    limit: u32,
+    genres: Option<String>,
+    countries: Option<String>
 ) -> Result<Vec<MovieCollected>, u16> {
-    let cache_key = format!("api_movie_collected_{}_p{}_l{}", period, page, limit);
+    let cache_key = format!("api_movie_collected_{}_p{}_l{}_g{:?}_c{:?}", period, page, limit, genres, countries);
 
     if let Some(pool) = app.try_state::<DbPool>() {
         if let Some(json) = cache::get_api_response_cache(&pool.0, &cache_key).await {
@@ -293,13 +335,21 @@ pub async fn movie_collected_period(
     
     let mut uri = API.movie.collected.uri.clone();
     uri = uri.replace("period", &period);
+
+    let mut params = HashMap::new();
+    if let Some(g) = genres {
+        if !g.is_empty() && g != "all" { params.insert("genres".to_string(), g); }
+    }
+    if let Some(c) = countries {
+        if !c.is_empty() && c != "all" { params.insert("countries".to_string(), c); }
+    }
     
     let result = client
         .req_api(
             &app,
             API.movie.collected.method.as_str(),
             uri,
-            None,
+            Some(params),
             None,
             Some(limit),
             Some(page),
@@ -320,4 +370,3 @@ pub async fn movie_collected_period(
         Err(e) => Err(e)
     }
 }
-

@@ -34,7 +34,7 @@
           <template #title>发现</template>
           <a-menu-item key="movies">电影</a-menu-item>
           <a-menu-item key="shows">电视剧</a-menu-item>
-          <a-menu-item key="trending">热门</a-menu-item>
+          <a-menu-item key="genres">分类</a-menu-item>
         </a-sub-menu>
         
         <a-sub-menu key="tracking">
@@ -156,7 +156,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, provide, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Message } from '@arco-design/web-vue' // Add this import
+import { Message } from '@arco-design/web-vue' 
 import { 
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
   IconHome, IconStar, IconBookmark, IconArrowLeft,
@@ -206,13 +206,10 @@ watch(() => userInfo.value?.images?.avatar?.full, async (url) => {
 
 const selectedKeys = computed(() => {
   const path = route.path
-  const type = route.query.type as string
-  if (path === '/') {
-    if (type === 'movies') return ['movies']
-    if (type === 'shows') return ['shows'] 
-    if (type === 'trending') return ['trending']
-    return ['home']
-  }
+  if (path === '/') return ['home']
+  if (path === '/movies') return ['movies']
+  if (path === '/shows') return ['shows']
+  if (path === '/browse') return ['genres']
   if (path === '/search') return ['search']
   if (path === '/up-next') return ['up-next']
   if (path === '/calendar') return ['calendar']
@@ -220,9 +217,6 @@ const selectedKeys = computed(() => {
   if (path === '/collection') return ['collection']
   if (path === '/history') return ['history']
   if (path === '/profile' || path === '/settings') return ['profile']
-  if (path.startsWith('/movie') || path.startsWith('/show')) {
-    return ['home']
-  }
   return ['home']
 })
 
@@ -297,9 +291,13 @@ const handleMenuClick = (key: string) => {
     case 'collection': router.push('/collection'); break;
     case 'history': router.push('/history'); break;
     case 'profile': router.push('/profile'); break;
-    case 'movies': router.push('/?type=movies'); break;
-    case 'shows': router.push('/?type=shows'); break;
-    case 'trending': router.push('/?type=trending'); break;
+    case 'movies': router.push('/movies'); break;
+    case 'shows': router.push('/shows'); break;
+    // 热门通常可以整合到电影/剧集里，或者作为发现的子项。这里我暂时将其与电影页对齐，或者如果用户有专门的热门需求，可以保留 trending 路由，但我建议移除 trending 菜单，直接在电影/剧集里看热门
+    // 不过按照用户习惯，有时需要一个混合热门。
+    // 这里为了简化，我将热门移除，因为电影/剧集页默认就是热门。
+    case 'trending': router.push('/movies'); break; // 临时指向电影
+    case 'genres': router.push('/browse'); break;
   }
 }
 
@@ -356,7 +354,7 @@ const shouldKeepAlive = (route: any) => {
   if (route.path.startsWith('/movie/') || route.path.startsWith('/show/')) {
     return false
   }
-  return ['/', '/search', '/watchlist', '/collection', '/history', '/profile'].includes(route.path)
+  return ['/', '/search', '/watchlist', '/collection', '/history', '/profile', '/browse', '/movies', '/shows'].includes(route.path)
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
