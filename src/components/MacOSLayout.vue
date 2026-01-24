@@ -11,7 +11,7 @@
           <icon-search class="search-icon" />
           <input 
             v-model="searchQuery" 
-            placeholder="Search" 
+            placeholder="搜索" 
             @keydown.enter="handleSearch"
           />
         </div>
@@ -21,14 +21,14 @@
       <div class="sidebar-scroll-area">
         <!-- Section: Discovery -->
         <div class="sidebar-group">
-          <div class="group-label">Discovery</div>
+          <div class="group-label">发现</div>
           <div 
             class="sidebar-item" 
             :class="{ active: isActive('/') }"
             @click="navTo('/')"
           >
             <icon-home class="item-icon" />
-            <span class="item-label">Home</span>
+            <span class="item-label">首页</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -36,7 +36,7 @@
             @click="navTo('/movies')"
           >
             <icon-star class="item-icon" />
-            <span class="item-label">Movies</span>
+            <span class="item-label">电影</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -44,7 +44,7 @@
             @click="navTo('/shows')"
           >
             <icon-play-circle class="item-icon" />
-            <span class="item-label">TV Shows</span>
+            <span class="item-label">电视剧</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -52,20 +52,20 @@
             @click="navTo('/browse')"
           >
             <icon-apps class="item-icon" />
-            <span class="item-label">Browse</span>
+            <span class="item-label">分类</span>
           </div>
         </div>
 
         <!-- Section: Library -->
         <div class="sidebar-group">
-          <div class="group-label">Library</div>
+          <div class="group-label">我的</div>
           <div 
             class="sidebar-item" 
             :class="{ active: isActive('/up-next') }"
             @click="navTo('/up-next')"
           >
             <icon-clock-circle class="item-icon" />
-            <span class="item-label">Up Next</span>
+            <span class="item-label">待看</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -73,7 +73,7 @@
             @click="navTo('/watchlist')"
           >
             <icon-bookmark class="item-icon" />
-            <span class="item-label">Watchlist</span>
+            <span class="item-label">观看清单</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -81,7 +81,7 @@
             @click="navTo('/history')"
           >
             <icon-history class="item-icon" />
-            <span class="item-label">History</span>
+            <span class="item-label">观看历史</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -89,7 +89,7 @@
             @click="navTo('/collection')"
           >
             <icon-folder class="item-icon" />
-            <span class="item-label">Collection</span>
+            <span class="item-label">我的片库</span>
           </div>
           <div 
             class="sidebar-item" 
@@ -97,7 +97,7 @@
             @click="navTo('/calendar')"
           >
             <icon-calendar class="item-icon" />
-            <span class="item-label">Calendar</span>
+            <span class="item-label">剧集日历</span>
           </div>
         </div>
       </div>
@@ -111,19 +111,19 @@
                 <icon-user v-else />
              </a-avatar>
              <div class="user-info">
-               <div class="user-name">{{ userInfo?.username || 'Guest' }}</div>
-               <div class="user-status">{{ isLoggedIn ? 'Online' : 'Click to Login' }}</div>
+               <div class="user-name">{{ userInfo?.username || '游客' }}</div>
+               <div class="user-status">{{ isLoggedIn ? '在线' : '点击登录' }}</div>
              </div>
              <icon-settings class="settings-icon" @click.stop="navTo('/settings')" />
           </div>
           <template #content>
             <a-doption value="profile">
               <template #icon><icon-user /></template>
-              Profile
+              个人中心
             </a-doption>
             <a-doption value="logout">
               <template #icon><icon-export /></template>
-              Logout
+              退出登录
             </a-doption>
           </template>
         </a-dropdown>
