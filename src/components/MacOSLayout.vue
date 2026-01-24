@@ -104,23 +104,42 @@
 
       <!-- User Profile (Bottom) -->
       <div class="sidebar-footer">
-        <div class="user-profile-card" @click="handleProfileClick">
-           <a-avatar :size="32" class="user-avatar">
-              <img v-if="avatarUrl" :src="avatarUrl" referrerpolicy="no-referrer"/>
-              <icon-user v-else />
-           </a-avatar>
-           <div class="user-info">
-             <div class="user-name">{{ userInfo?.username || 'Guest' }}</div>
-             <div class="user-status">{{ isLoggedIn ? 'Online' : 'Click to Login' }}</div>
-           </div>
-           <icon-settings class="settings-icon" @click.stop="navTo('/settings')" />
-        </div>
+        <a-dropdown trigger="click" :disabled="!isLoggedIn" @select="handleMenuSelect">
+          <div class="user-profile-card" @click="handleGuestClick">
+             <a-avatar :size="32" class="user-avatar">
+                <img v-if="avatarUrl" :src="avatarUrl" referrerpolicy="no-referrer"/>
+                <icon-user v-else />
+             </a-avatar>
+             <div class="user-info">
+               <div class="user-name">{{ userInfo?.username || 'Guest' }}</div>
+               <div class="user-status">{{ isLoggedIn ? 'Online' : 'Click to Login' }}</div>
+             </div>
+             <icon-settings class="settings-icon" @click.stop="navTo('/settings')" />
+          </div>
+          <template #content>
+            <a-doption value="profile">
+              <template #icon><icon-user /></template>
+              Profile
+            </a-doption>
+            <a-doption value="logout">
+              <template #icon><icon-export /></template>
+              Logout
+            </a-doption>
+          </template>
+        </a-dropdown>
       </div>
     </aside>
 
     <!-- Main Content -->
     <main class="macos-main">
-      <!-- Toolbar / Breadcrumbs could go here if needed, but keeping it clean for now -->
+      <div 
+        v-if="showGlobalBackButton" 
+        class="global-back-btn" 
+        @click="handleGlobalBack"
+      >
+        <icon-arrow-left />
+      </div>
+      
        <div class="content-scroll-container" ref="contentRef">
           <router-view v-slot="{ Component, route }">
             <keep-alive v-if="shouldKeepAlive(route)">
@@ -134,14 +153,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, watch, nextTick } from 'vue';
+import { ref, inject, watch, nextTick, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import type { Ref } from 'vue';
 import type { User } from '../types/api';
 import { 
   IconHome, IconStar, IconPlayCircle, IconApps, 
   IconClockCircle, IconBookmark, IconHistory, IconFolder, IconCalendar,
-  IconSearch, IconUser, IconSettings
+  IconSearch, IconUser, IconSettings, IconExport, IconArrowLeft
 } from '@arco-design/web-vue/es/icon';
 
 const router = useRouter();
@@ -152,9 +171,18 @@ const contentRef = ref();
 const userInfo = inject<Ref<User | null>>('userInfo', ref(null));
 const isLoggedIn = inject<Ref<boolean>>('isLoggedIn', ref(false));
 const authActions = inject<any>('authActions', {});
-const { login, avatarUrl } = authActions;
+const { login, logout, avatarUrl } = authActions;
 
 const searchQuery = ref('');
+
+const showGlobalBackButton = computed(() => {
+  if (['/', '/search'].includes(route.path)) return false;
+  return window.history.length > 1;
+});
+
+const handleGlobalBack = () => {
+  router.back();
+};
 
 const navTo = (path: string) => {
   router.push(path);
@@ -172,11 +200,17 @@ const handleSearch = () => {
   }
 };
 
-const handleProfileClick = () => {
-  if (isLoggedIn.value) {
-    router.push('/profile');
-  } else {
+const handleGuestClick = () => {
+  if (!isLoggedIn.value) {
     login();
+  }
+};
+
+const handleMenuSelect = (value: any) => {
+  if (value === 'profile') {
+    navTo('/profile');
+  } else if (value === 'logout') {
+    if (typeof logout === 'function') logout();
   }
 };
 
@@ -409,5 +443,36 @@ watch(route, async () => {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.4);
+}
+
+.global-back-btn {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+  font-size: 16px;
+}
+
+.global-back-btn:hover {
+  background: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+  color: #000;
+}
+
+.global-back-btn:active {
+  transform: scale(0.96);
 }
 </style>
