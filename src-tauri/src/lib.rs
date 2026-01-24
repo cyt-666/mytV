@@ -13,6 +13,11 @@ use db::cache;
 use std::fs;
 use std::path::Path;
 
+#[cfg(target_os = "macos")]
+use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+#[cfg(target_os = "windows")]
+use window_vibrancy::apply_blur;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_level = match app_conf::get_config().log_level.as_str() {
@@ -163,9 +168,17 @@ pub fn run() {
             let client = ApiClient::new(&app.handle());
             app.manage(Mutex::new(client));
 
-            #[cfg(target_os = "windows")]
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_decorations(false);
+                #[cfg(target_os = "macos")]
+                apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None)
+                    .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+
+                #[cfg(target_os = "windows")]
+                {
+                    let _ = window.set_decorations(false);
+                    apply_blur(&window, Some((18, 18, 18, 125)))
+                        .expect("Unsupported platform! 'apply_blur' is only supported on Windows");
+                }
             }
 
             Ok(())

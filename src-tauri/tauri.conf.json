@@ -19,7 +19,6 @@
         "shadow": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "vibrancy": "sidebar",
         "transparent": true
       }
     ],

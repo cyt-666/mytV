@@ -154,9 +154,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, provide, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
+import type { Ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Message } from '@arco-design/web-vue' 
 import { 
   IconVideoCamera, IconSearch, IconUser, IconDown, IconExport,
   IconHome, IconStar, IconBookmark, IconArrowLeft,
@@ -164,45 +164,28 @@ import {
   IconMinus, IconFullscreen, IconFullscreenExit, IconClose,
   IconPlayCircle
 } from '@arco-design/web-vue/es/icon'
-import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import type { User } from '../types/api'
+import { usePlatform } from '../composables/usePlatform'
 
 const router = useRouter()
 const route = useRoute()
 const appWindow = getCurrentWindow()
 const contentRef = ref()
+const { isMacOS } = usePlatform()
 
-// 状态管理
+// Injected Global State
+const userInfo = inject<Ref<User | null>>('userInfo', ref(null))
+const isLoggedIn = inject<Ref<boolean>>('isLoggedIn', ref(false))
+const authActions = inject<any>('authActions', {})
+const { login, logout, avatarUrl } = authActions
+
+// Local UI State
 const searchQuery = ref('')
 const collapsed = ref(false)
-const isLoggedIn = ref(false)
-const userInfo = ref<User | null>(null)
 const showGlobalBackButton = ref(false)
-const isMaximized = ref(false) // 追踪最大化状态
-const isMacOS = ref(navigator.userAgent.includes('Mac OS X')) // 检测 macOS
-
-const avatarUrl = ref<string | null>(null)
-
-watch(() => userInfo.value?.images?.avatar?.full, async (url) => {
-  if (!url) {
-    avatarUrl.value = null
-    return
-  }
-  
-  if (isMacOS.value) {
-    try {
-      const proxied = await invoke<string>('get_proxied_image', { url })
-      avatarUrl.value = proxied
-      return
-    } catch (e) {
-      console.warn('Avatar proxy failed, falling back to direct URL', e)
-    }
-  }
-  
-  avatarUrl.value = url.startsWith('http') ? url.replace(/^http:/, 'https:') : `https://${url}`
-}, { immediate: true })
+const isMaximized = ref(false)
 
 const selectedKeys = computed(() => {
   const path = route.path
@@ -219,61 +202,6 @@ const selectedKeys = computed(() => {
   if (path === '/profile' || path === '/settings') return ['profile']
   return ['home']
 })
-
-const checkLoginStatus = async () => {
-  try {
-    const token = await invoke<boolean>('check_login_status')
-    if (token) {
-      isLoggedIn.value = true
-      await loadUserProfile()
-    }
-  } catch (error) { console.error(error) }
-}
-
-const loadUserProfile = async () => {
-  try {
-    const profile = await invoke('get_user_profile')
-    console.log('User Profile:', profile)
-    if (profile) userInfo.value = (profile as any).user
-  } catch (error) { console.error(error) }
-}
-
-provide('userInfo', userInfo)
-provide('isLoggedIn', isLoggedIn)
-provide('refreshUserInfo', loadUserProfile)
-
-const setupOAuthListener = () => {
-  listen<string>("oauth-callback", async (event) => {
-    if (event.payload) {
-      try {
-        await invoke("get_token", { code: event.payload })
-        
-        Message.success('登录成功，正在同步数据...')
-        
-        // 强制重新加载用户信息（带重试机制）
-        await loadUserProfile()
-        
-        if (!userInfo.value) {
-          console.log('用户信息加载失败，1秒后重试...')
-          await new Promise(r => setTimeout(r, 1000))
-          await loadUserProfile()
-        }
-        
-        // 显式更新状态
-        if (userInfo.value) {
-          isLoggedIn.value = true
-          Message.success(`欢迎回来, ${userInfo.value.username}`)
-        } else {
-          // 如果获取 profile 失败，尝试仅设置登录态
-          isLoggedIn.value = true
-        }
-      } catch (e) {
-        console.error(e)
-        Message.error('登录失败，请重试')
-      }
-    }
-  })
-}
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
@@ -293,22 +221,9 @@ const handleMenuClick = (key: string) => {
     case 'profile': router.push('/profile'); break;
     case 'movies': router.push('/movies'); break;
     case 'shows': router.push('/shows'); break;
-    // 热门通常可以整合到电影/剧集里，或者作为发现的子项。这里我暂时将其与电影页对齐，或者如果用户有专门的热门需求，可以保留 trending 路由，但我建议移除 trending 菜单，直接在电影/剧集里看热门
-    // 不过按照用户习惯，有时需要一个混合热门。
-    // 这里为了简化，我将热门移除，因为电影/剧集页默认就是热门。
-    case 'trending': router.push('/movies'); break; // 临时指向电影
+    case 'trending': router.push('/movies'); break; 
     case 'genres': router.push('/browse'); break;
   }
-}
-
-const login = async () => {
-  try { await invoke('start_trakt_user_auth') }
-  catch (e) { if (e === 200) { isLoggedIn.value = true; await loadUserProfile() } }
-}
-
-const logout = async () => {
-  try { await invoke('revoke_token'); isLoggedIn.value = false; userInfo.value = null }
-  catch (e) { isLoggedIn.value = false; userInfo.value = null }
 }
 
 const handleGlobalBack = () => {
@@ -316,7 +231,7 @@ const handleGlobalBack = () => {
   else router.push('/')
 }
 
-// 窗口控制
+// Window Controls
 const minimizeWindow = () => appWindow.minimize()
 const maximizeWindow = async () => {
   await appWindow.toggleMaximize()
@@ -324,13 +239,9 @@ const maximizeWindow = async () => {
 }
 const closeWindow = () => appWindow.close()
 
-// macOS 窗口拖拽：使用 startDragging API 解决 Overlay 模式下无法拖拽的问题
 const handleHeaderDrag = async (e: MouseEvent) => {
-  // 检查点击目标是否是交互元素（按钮、输入框等）
   const target = e.target as HTMLElement
   const isInteractive = target.closest('button, input, a, .arco-input-wrapper, .user-btn, .control-btn, .window-controls')
-  
-  // 只有在非交互元素上且是左键点击时才触发拖拽
   if (!isInteractive && e.buttons === 1 && isMacOS.value) {
     await appWindow.startDragging()
   }
@@ -342,8 +253,6 @@ const updateMaximizeState = async () => {
 
 watch(route, async (newRoute) => {
   showGlobalBackButton.value = newRoute.path !== '/' && newRoute.path !== '/search'
-  
-  // 路由切换时滚动到顶部
   await nextTick()
   if (contentRef.value?.$el) {
     contentRef.value.$el.scrollTo({ top: 0 })
@@ -367,10 +276,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 }
 
 onMounted(async () => {
-  checkLoginStatus()
-  setupOAuthListener()
   document.addEventListener('keydown', handleKeyDown)
-  
   updateMaximizeState()
   await listen('tauri://resize', updateMaximizeState)
 })

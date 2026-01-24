@@ -1,14 +1,39 @@
 <script setup lang="ts">
-import AppLayout from './components/AppLayout.vue';
+import { defineAsyncComponent, onMounted, provide } from 'vue';
+import { usePlatform } from './composables/usePlatform';
+import { useGlobalAuth } from './composables/useGlobalAuth';
 
+const { isMacOS } = usePlatform();
+const { 
+  isLoggedIn, 
+  userInfo, 
+  loadUserProfile, 
+  checkLoginStatus, 
+  setupOAuthListener, 
+  login, 
+  logout,
+  avatarUrl
+} = useGlobalAuth();
 
+// Provide global state for deep injection (views, etc.)
+provide('userInfo', userInfo);
+provide('isLoggedIn', isLoggedIn);
+provide('refreshUserInfo', loadUserProfile);
+provide('authActions', { login, logout, avatarUrl });
 
-// 这些原有的API调用逻辑可以移到对应的组件中使用
+// Lazy load layouts
+const WindowsLayout = defineAsyncComponent(() => import('./components/WindowsLayout.vue'));
+const MacOSLayout = defineAsyncComponent(() => import('./components/MacOSLayout.vue'));
+
+onMounted(() => {
+  checkLoginStatus();
+  setupOAuthListener();
+});
 </script>
 
 <template>
-  <div id="app">
-    <AppLayout />
+  <div id="app" :class="{ 'platform-macos': isMacOS, 'platform-windows': !isMacOS }">
+    <component :is="isMacOS ? MacOSLayout : WindowsLayout" />
   </div>
 </template>
 
