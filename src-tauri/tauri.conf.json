@@ -18,7 +18,9 @@
         "decorations": true,
         "shadow": true,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "vibrancy": "sidebar",
+        "transparent": true
       }
     ],
     "security": {
