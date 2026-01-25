@@ -233,29 +233,11 @@ watch(isLoggedIn, (newVal) => {
   margin-bottom: 24px;
 }
 
+
 :deep(.custom-segmented-control) {
-  background-color: var(--color-fill-2);
-  padding: 4px;
-  border-radius: 8px;
-  border: none;
+  /* Handled by global macos-theme.css */
 }
 
-:deep(.custom-segmented-control .arco-radio-button) {
-  background-color: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--color-text-2);
-  transition: all 0.2s;
-  padding: 0 16px;
-  height: 32px;
-  line-height: 32px;
-}
-
-:deep(.custom-segmented-control .arco-radio-button-checked) {
-  background-color: var(--color-bg-2);
-  color: var(--color-text-1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
 
 .radio-label {
   display: flex;
