@@ -27,3 +27,4 @@ dist-ssr
 target
 app.config.json
 AGENTS.md
+.sisyphus

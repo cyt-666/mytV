@@ -291,7 +291,7 @@ onUnmounted(() => {
 .media-card {
   position: relative;
   background: transparent; /* 卡片本身透明，由图片撑起 */
-  border-radius: 12px;
+  border-radius: var(--macos-radius-lg, 12px);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   /* 解决 Safari 圆角溢出 */
@@ -303,19 +303,33 @@ onUnmounted(() => {
   z-index: 10;
 }
 
+/* MacOS Hover Refinement */
+:global(.platform-macos) .media-card:hover {
+  transform: scale(1.03) translateY(-3px); /* More subtle lift on macOS */
+}
+
 .poster-container {
   position: relative;
   width: 100%;
   aspect-ratio: 2/3;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--macos-radius-lg, 12px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 默认柔和阴影 */
   transition: box-shadow 0.4s ease;
   background: #f0f0f0;
 }
 
+/* MacOS Shadow & Border Integration */
+:global(.platform-macos) .poster-container {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.1));
+}
+
 .media-card:hover .poster-container {
   box-shadow: 0 16px 32px rgba(0,0,0,0.25); /* 悬停深邃阴影 */
+}
+
+:global(.platform-macos) .media-card:hover .poster-container {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.3));
 }
 
 .media-poster {

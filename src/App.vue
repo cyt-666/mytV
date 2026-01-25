@@ -39,6 +39,7 @@ onMounted(() => {
 
 <style>
 @import './assets/style.css';
+@import './assets/macos-theme.css';
 
 #app {
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;

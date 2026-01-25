@@ -39,43 +39,7 @@
               <icon-image :size="60" />
             </div>
             
-            <!-- 操作按钮 -->
-            <div class="action-buttons">
-              <a-button 
-                type="primary" 
-                size="large" 
-                :class="['action-btn', { 'is-active': isWatched }]"
-                
-                @click="handleMarkAsWatched"
-                :loading="actionLoading.watched"
-                :status="isWatched ? 'success' : undefined"
-              >
-                <icon-check v-if="isWatched" />
-                <icon-play-arrow v-else />
-                {{ isWatched ? '已观看' : '标记已观看' }}
-              </a-button>
-              <a-button 
-                size="large" 
-                :class="['action-btn', 'collection-btn', { 'is-active': isInCollection }]"
-                :type="isInCollection ? 'primary' : 'secondary'"
-                @click="handleToggleCollection"
-                :loading="actionLoading.collection"
-              >
-                <icon-heart />
-                {{ isInCollection ? '已入库' : '入库' }}
-              </a-button>
-              <a-button 
-                size="large" 
-                :class="['action-btn', { 'is-active': isInWatchlist }]"
-                :type="isInWatchlist ? 'primary' : 'secondary'"
-                :status="isInWatchlist ? 'warning' : undefined"
-                @click="handleToggleWatchlist"
-                :loading="actionLoading.watchlist"
-              >
-                <icon-bookmark />
-                {{ isInWatchlist ? '已想看' : '想看' }}
-              </a-button>
-            </div>
+
           </div>
 
           <!-- 详细信息 -->
@@ -109,6 +73,46 @@
                 <span v-if="movieDetails.runtime" class="info-item">{{ formatRuntime(movieDetails.runtime) }}</span>
                 <span v-if="movieDetails.certification" class="info-item certification">{{ movieDetails.certification }}</span>
               </div>
+            </div>
+
+            <!-- 操作工具栏 -->
+            <div class="action-toolbar">
+              <a-button 
+                type="primary" 
+                shape="round"
+                size="large" 
+                :class="['action-btn', { 'is-active': isWatched }]"
+                @click="handleMarkAsWatched"
+                :loading="actionLoading.watched"
+                :status="isWatched ? 'success' : undefined"
+              >
+                <icon-check v-if="isWatched" />
+                <icon-play-arrow v-else />
+                {{ isWatched ? '已观看' : '标记已观看' }}
+              </a-button>
+              <a-button 
+                shape="round"
+                size="large" 
+                :class="['action-btn', 'collection-btn', { 'is-active': isInCollection }]"
+                :type="isInCollection ? 'primary' : 'secondary'"
+                @click="handleToggleCollection"
+                :loading="actionLoading.collection"
+              >
+                <icon-heart />
+                {{ isInCollection ? '已入库' : '入库' }}
+              </a-button>
+              <a-button 
+                shape="round"
+                size="large" 
+                :class="['action-btn', { 'is-active': isInWatchlist }]"
+                :type="isInWatchlist ? 'primary' : 'secondary'"
+                :status="isInWatchlist ? 'warning' : undefined"
+                @click="handleToggleWatchlist"
+                :loading="actionLoading.watchlist"
+              >
+                <icon-bookmark />
+                {{ isInWatchlist ? '已想看' : '想看' }}
+              </a-button>
             </div>
 
             <!-- 类型标签 -->
@@ -519,20 +523,21 @@ const checkUserStatus = async () => {
   margin-bottom: 24px;
 }
 
-.action-buttons {
+.action-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .action-btn {
-  width: 100%;
-  height: 48px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   font-weight: 600;
+  padding: 0 24px;
 }
 
 /* 覆盖 Arco 默认样式，实现紫色收藏按钮 */
@@ -715,13 +720,14 @@ const checkUserStatus = async () => {
     font-size: 28px;
   }
   
-  .action-buttons {
-    flex-direction: row;
+  .action-toolbar {
+    gap: 12px;
   }
   
   .action-btn {
     flex: 1;
-    height: 40px;
+    padding: 0 12px;
+    font-size: 13px;
   }
 }
 

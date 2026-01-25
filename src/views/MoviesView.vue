@@ -4,16 +4,31 @@
       <h1 class="page-title">电影</h1>
     </div>
 
-    <a-tabs
-      v-model:active-key="activeTab"
-      type="line"
-      size="large"
-      @change="handleTabChange"
-    >
-      <a-tab-pane key="trending">
-        <template #title>
-          <span class="tab-title"><IconThunderbolt /> 热门趋势</span>
-        </template>
+    <div class="control-container">
+      <a-radio-group
+        v-model="activeTab"
+        type="button"
+        size="large"
+        @change="handleTabChange"
+        class="custom-segmented-control"
+      >
+        <a-radio value="trending">
+          <span class="radio-label"><IconThunderbolt /> 热门趋势</span>
+        </a-radio>
+        <a-radio value="popular">
+          <span class="radio-label"><IconTrophy /> 历史经典</span>
+        </a-radio>
+        <a-radio value="recommended" v-if="isLoggedIn">
+          <span class="radio-label"><IconThumbUp /> 为你推荐</span>
+        </a-radio>
+        <a-radio value="anticipated">
+          <span class="radio-label"><IconStar /> 最受期待</span>
+        </a-radio>
+      </a-radio-group>
+    </div>
+
+    <div class="content-container">
+      <div v-show="activeTab === 'trending'">
         <MediaGrid
           :items="trendingItems"
           :loading="loading.trending"
@@ -21,12 +36,9 @@
           @load-more="loadMoreTrending"
           media-type="movie"
         />
-      </a-tab-pane>
+      </div>
 
-      <a-tab-pane key="popular">
-        <template #title>
-          <span class="tab-title"><IconTrophy /> 历史经典</span>
-        </template>
+      <div v-show="activeTab === 'popular'">
         <MediaGrid
           :items="popularItems"
           :loading="loading.popular && popularPage === 1"
@@ -35,12 +47,9 @@
           @load-more="loadMorePopular"
           media-type="movie"
         />
-      </a-tab-pane>
+      </div>
 
-      <a-tab-pane key="recommended" v-if="isLoggedIn">
-        <template #title>
-          <span class="tab-title"><IconThumbUp /> 为你推荐</span>
-        </template>
+      <div v-show="activeTab === 'recommended'" v-if="isLoggedIn">
         <MediaGrid
           :items="recommendedItems"
           :loading="loading.recommended && recommendedPage === 1"
@@ -49,12 +58,9 @@
           @load-more="loadMoreRecommended"
           media-type="movie"
         />
-      </a-tab-pane>
+      </div>
 
-      <a-tab-pane key="anticipated">
-        <template #title>
-          <span class="tab-title"><IconStar /> 最受期待</span>
-        </template>
+      <div v-show="activeTab === 'anticipated'">
         <MediaGrid
           :items="anticipatedItems"
           :loading="loading.anticipated && anticipatedPage === 1"
@@ -63,8 +69,8 @@
           @load-more="loadMoreAnticipated"
           media-type="movie"
         />
-      </a-tab-pane>
-    </a-tabs>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -226,5 +232,40 @@ watch(isLoggedIn, (newVal) => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.control-container {
+  margin-bottom: 24px;
+}
+
+:deep(.custom-segmented-control) {
+  background-color: var(--color-fill-2);
+  padding: 4px;
+  border-radius: 8px;
+  border: none;
+}
+
+:deep(.custom-segmented-control .arco-radio-button) {
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-2);
+  transition: all 0.2s;
+  padding: 0 16px;
+  height: 32px;
+  line-height: 32px;
+}
+
+:deep(.custom-segmented-control .arco-radio-button-checked) {
+  background-color: var(--color-bg-2);
+  color: var(--color-text-1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
 }
 </style>
