@@ -285,16 +285,18 @@ onBeforeUnmount(() => {
 }
 
 .page-title {
-  font-size: 28px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-size: 30px;
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #1d1d1f;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .page-subtitle {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 16px;
-  color: #8e8e93;
+  color: #86909c;
   margin: 0;
 }
 
@@ -324,14 +326,17 @@ onBeforeUnmount(() => {
   padding: 16px;
   gap: 20px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0,0,0,0.02);
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  box-shadow: none; /* Flat by default */
+  border: 1px solid rgba(0, 0, 0, 0.06); /* Subtle border definition */
+  position: relative; /* For z-index context */
 }
 
 .up-next-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: scale(1.015); /* Subtle scale */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* Soft shadow on hover */
+  border-color: rgba(0, 0, 0, 0.0); /* Hide border to blend with shadow or keep it? usually nice to keep light */
+  z-index: 10;
 }
 
 .item-poster {
@@ -375,8 +380,9 @@ onBeforeUnmount(() => {
 }
 
 .show-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
   color: #1d1d1f;
   margin: 0;
   line-height: 1.3;
@@ -387,14 +393,16 @@ onBeforeUnmount(() => {
 }
 
 .last-watched {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 12px;
   color: #86909c;
   white-space: nowrap;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .episode-info {
   margin-bottom: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 14px;
   color: #4e5969;
   display: flex;
@@ -402,13 +410,15 @@ onBeforeUnmount(() => {
 }
 
 .season-ep {
+  font-family: "SF Mono", SFMono-Regular, ui-monospace, monospace;
   font-weight: 600;
-  color: #165dff;
+  color: #0066cc; /* macOS blue */
   margin-right: 8px;
-  background: rgba(22, 93, 255, 0.1);
+  background: rgba(0, 102, 204, 0.08);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12px;
+  letter-spacing: -0.02em;
 }
 
 .episode-title {

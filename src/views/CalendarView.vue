@@ -41,6 +41,7 @@
                 :key="`${item.show.ids?.trakt ?? 0}-${item.episode?.ids.trakt ?? 0}`"
                 class="episode-card"
                 hoverable
+                :bordered="false"
                 @click="navigateToEpisode(item)"
               >
                 <div class="episode-card-body">
@@ -276,9 +277,12 @@ onMounted(() => {
 .toolbar {
   margin-bottom: 32px;
   padding: 16px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0,0,0,0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -345,6 +349,7 @@ onMounted(() => {
   font-weight: 700;
   color: #1d1d1f;
   margin: 0;
+  letter-spacing: -0.5px;
 }
 
 .timeline-date-raw {
@@ -356,24 +361,25 @@ onMounted(() => {
 .episode-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .episode-card {
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  border: none;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   overflow: hidden;
 }
 
 .episode-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-  border-color: rgba(22, 93, 255, 0.2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
 }
 
 :deep(.arco-card-body) {
-  padding: 12px;
+  padding: 16px;
 }
 
 .episode-card-body {
@@ -385,9 +391,10 @@ onMounted(() => {
   width: 80px;
   height: 120px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   background: #f5f5f7;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .show-poster {

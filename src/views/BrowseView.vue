@@ -2,127 +2,130 @@
   <div class="browse-view page-container">
     <div class="page-header">
       <h1 class="page-title">发现内容</h1>
+      
+      <a-radio-group 
+        v-model="activeTab" 
+        type="button" 
+        size="large"
+        class="custom-segmented-control"
+        @change="handleTabChange"
+      >
+        <a-radio value="genres">
+           <template #default>
+             <IconApps style="margin-right: 6px"/> 按类型
+           </template>
+        </a-radio>
+        <a-radio value="countries">
+           <template #default>
+             <IconPublic style="margin-right: 6px"/> 按地区
+           </template>
+        </a-radio>
+      </a-radio-group>
     </div>
 
-    <a-tabs
-      v-model:active-key="activeTab"
-      type="line"
-      size="large"
-      @change="handleTabChange"
-      class="browse-tabs"
-    >
-      <!-- 按类型浏览 -->
-      <a-tab-pane key="genres">
-        <template #title>
-          <span class="tab-title"><IconApps /> 按类型</span>
-        </template>
-        
-        <div class="filter-toolbar">
-          <a-space size="medium" wrap>
-            <a-radio-group v-model="genreMediaType" type="button" @change="resetAndLoad('genres')">
-              <a-radio value="movies">电影</a-radio>
-              <a-radio value="shows">剧集</a-radio>
-            </a-radio-group>
-            
-            <a-select 
-              v-model="genreDataSource" 
-              placeholder="数据源" 
-              style="width: 160px;"
-              @change="resetAndLoad('genres')"
-            >
-              <a-option value="watched-weekly">本周观看榜</a-option>
-              <a-option value="watched-monthly">本月观看榜</a-option>
-              <a-option value="collected-monthly">本月收藏榜</a-option>
-              <a-option value="popular">历史热门</a-option>
-              <a-option value="trending">实时趋势</a-option>
-            </a-select>
-            
-            <a-select 
-              v-model="selectedGenre" 
-              placeholder="选择类型" 
-              style="width: 180px;"
-              @change="resetAndLoad('genres')"
-            >
-              <a-option value="all">全部类型</a-option>
-              <a-option v-for="(name, slug) in genreMap" :key="slug" :value="slug">
-                {{ name }}
-              </a-option>
-            </a-select>
+    <!-- 按类型浏览 -->
+    <div v-show="activeTab === 'genres'" class="view-section">
+      <div class="filter-toolbar">
+        <a-space size="medium" wrap>
+          <a-radio-group v-model="genreMediaType" type="button" @change="resetAndLoad('genres')">
+            <a-radio value="movies">电影</a-radio>
+            <a-radio value="shows">剧集</a-radio>
+          </a-radio-group>
+          
+          <a-select 
+            v-model="genreDataSource" 
+            placeholder="数据源" 
+            style="width: 160px;"
+            @change="resetAndLoad('genres')"
+          >
+            <a-option value="watched-weekly">本周观看榜</a-option>
+            <a-option value="watched-monthly">本月观看榜</a-option>
+            <a-option value="collected-monthly">本月收藏榜</a-option>
+            <a-option value="popular">历史热门</a-option>
+            <a-option value="trending">实时趋势</a-option>
+          </a-select>
+          
+          <a-select 
+            v-model="selectedGenre" 
+            placeholder="选择类型" 
+            style="width: 180px;"
+            @change="resetAndLoad('genres')"
+          >
+            <a-option value="all">全部类型</a-option>
+            <a-option v-for="(name, slug) in genreMap" :key="slug" :value="slug">
+              {{ name }}
+            </a-option>
+          </a-select>
 
-            <a-tag v-if="genreItems.length > 0" color="arcoblue">
-              <template #icon><IconCheckCircle /></template>
-              {{ genreItems.length }} 个结果
-            </a-tag>
-          </a-space>
-        </div>
+          <a-tag v-if="genreItems.length > 0" color="arcoblue" class="result-tag">
+            <template #icon><IconCheckCircle /></template>
+            {{ genreItems.length }} 个结果
+          </a-tag>
+        </a-space>
+      </div>
 
-        <MediaGrid
-          :items="genreItems"
-          :loading="loading && genreItems.length === 0"
-          :loading-more="loadingMore"
-          :has-more="hasMoreGenre"
-          @load-more="loadMoreGenre"
-          :media-type="genreMediaType === 'movies' ? 'movie' : 'show'"
-          :empty-message="getEmptyMessage('genre')"
-        />
-      </a-tab-pane>
+      <MediaGrid
+        :items="genreItems"
+        :loading="loading && genreItems.length === 0"
+        :loading-more="loadingMore"
+        :has-more="hasMoreGenre"
+        @load-more="loadMoreGenre"
+        :media-type="genreMediaType === 'movies' ? 'movie' : 'show'"
+        :empty-message="getEmptyMessage('genre')"
+      />
+    </div>
 
-      <!-- 按地区浏览 -->
-      <a-tab-pane key="countries">
-        <template #title>
-          <span class="tab-title"><IconPublic /> 按地区</span>
-        </template>
+    <!-- 按地区浏览 -->
+    <div v-show="activeTab === 'countries'" class="view-section">
+      <div class="filter-toolbar">
+        <a-space size="medium" wrap>
+          <a-radio-group v-model="countryMediaType" type="button" @change="resetAndLoad('countries')">
+            <a-radio value="movies">电影</a-radio>
+            <a-radio value="shows">剧集</a-radio>
+          </a-radio-group>
+          
+          <a-select 
+            v-model="countryDataSource" 
+            placeholder="数据源" 
+            style="width: 160px;"
+            @change="resetAndLoad('countries')"
+          >
+            <a-option value="watched-weekly">本周观看榜</a-option>
+            <a-option value="watched-monthly">本月观看榜</a-option>
+            <a-option value="collected-monthly">本月收藏榜</a-option>
+            <a-option value="popular">历史热门</a-option>
+            <a-option value="trending">实时趋势</a-option>
+          </a-select>
+          
+          <a-select 
+            v-model="selectedCountry" 
+            placeholder="选择地区" 
+            style="width: 180px;"
+            @change="resetAndLoad('countries')"
+          >
+            <a-option value="all">全部地区</a-option>
+            <a-option v-for="(name, code) in countryMap" :key="code" :value="code">
+              {{ name }}
+            </a-option>
+          </a-select>
 
-        <div class="filter-toolbar">
-          <a-space size="medium" wrap>
-            <a-radio-group v-model="countryMediaType" type="button" @change="resetAndLoad('countries')">
-              <a-radio value="movies">电影</a-radio>
-              <a-radio value="shows">剧集</a-radio>
-            </a-radio-group>
-            
-            <a-select 
-              v-model="countryDataSource" 
-              placeholder="数据源" 
-              style="width: 160px;"
-              @change="resetAndLoad('countries')"
-            >
-              <a-option value="watched-weekly">本周观看榜</a-option>
-              <a-option value="watched-monthly">本月观看榜</a-option>
-              <a-option value="collected-monthly">本月收藏榜</a-option>
-              <a-option value="popular">历史热门</a-option>
-              <a-option value="trending">实时趋势</a-option>
-            </a-select>
-            
-            <a-select 
-              v-model="selectedCountry" 
-              placeholder="选择地区" 
-              style="width: 180px;"
-              @change="resetAndLoad('countries')"
-            >
-              <a-option value="all">全部地区</a-option>
-              <a-option v-for="(name, code) in countryMap" :key="code" :value="code">
-                {{ name }}
-              </a-option>
-            </a-select>
+          <a-tag v-if="countryItems.length > 0" color="arcoblue" class="result-tag">
+            <template #icon><IconCheckCircle /></template>
+            {{ countryItems.length }} 个结果
+          </a-tag>
+        </a-space>
+      </div>
 
-            <a-tag v-if="countryItems.length > 0" color="arcoblue">
-              <template #icon><IconCheckCircle /></template>
-              {{ countryItems.length }} 个结果
-            </a-tag>
-          </a-space>
-        </div>
-
-        <MediaGrid
-          :items="countryItems"
-          :loading="loading && countryItems.length === 0"
-          :loading-more="loadingMore"
-          :has-more="hasMoreCountry"
-          @load-more="loadMoreCountry"
-          :media-type="countryMediaType === 'movies' ? 'movie' : 'show'"
-          :empty-message="getEmptyMessage('country')"
-        />
-      </a-tab-pane>
-    </a-tabs>
+      <MediaGrid
+        :items="countryItems"
+        :loading="loading && countryItems.length === 0"
+        :loading-more="loadingMore"
+        :has-more="hasMoreCountry"
+        @load-more="loadMoreCountry"
+        :media-type="countryMediaType === 'movies' ? 'movie' : 'show'"
+        :empty-message="getEmptyMessage('country')"
+      />
+    </div>
   </div>
 </template>
 
@@ -270,7 +273,7 @@ const resetAndLoad = (tab: string) => {
   loadData(false)
 }
 
-const handleTabChange = (key: string | number) => {
+const handleTabChange = (key: string | number | boolean) => {
   const k = String(key)
   activeTab.value = k
   router.replace({ query: { ...route.query, tab: k } })
@@ -300,24 +303,109 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 24px; }
+.page-header { 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
 .page-title { font-size: 32px; font-weight: 800; color: #1d1d1f; margin: 0; }
-.browse-tabs :deep(.arco-tabs-nav::before) { display: none; }
-.browse-tabs :deep(.arco-tabs-tab) {
-  font-size: 18px;
+
+/* Segmented Control Styles */
+.custom-segmented-control {
+  background-color: rgba(118, 118, 128, 0.12);
+  padding: 4px;
+  border-radius: 9px;
+  border: none;
+  display: inline-flex;
+}
+
+.custom-segmented-control :deep(.arco-radio-button) {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: #555;
+  font-weight: 500;
+  padding: 0 16px;
+  height: 32px;
+  line-height: 32px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+}
+
+.custom-segmented-control :deep(.arco-radio-button.arco-radio-checked) {
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
+  color: #000;
   font-weight: 600;
-  padding: 12px 0;
-  margin-right: 40px;
 }
-.tab-title { display: flex; align-items: center; gap: 8px; }
+
+.custom-segmented-control :deep(.arco-radio-button:hover:not(.arco-radio-checked)) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Filter Toolbar - Glassmorphism */
 .filter-toolbar {
-  margin: 24px 0 32px 0;
-  padding: 24px;
-  background: linear-gradient(135deg, #f7f8fa 0%, #ffffff 100%);
-  border-radius: 20px;
-  border: 1px solid #e5e6eb;
+  margin: 0 0 32px 0;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
 }
+
+/* Rounded inputs inside toolbar */
+.filter-toolbar :deep(.arco-select-view),
+.filter-toolbar :deep(.arco-input-wrapper) {
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+  transition: all 0.2s ease;
+}
+.filter-toolbar :deep(.arco-select-view:hover),
+.filter-toolbar :deep(.arco-input-wrapper:hover) {
+  background-color: #fff;
+  border-color: rgba(0,0,0,0.1);
+}
+
+/* Radio buttons inside toolbar */
+.filter-toolbar :deep(.arco-radio-group-button) {
+  background-color: rgba(118, 118, 128, 0.12);
+  padding: 2px;
+  border-radius: 8px;
+  border: none;
+}
+.filter-toolbar :deep(.arco-radio-button) {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  margin: 0;
+  color: #666;
+}
+.filter-toolbar :deep(.arco-radio-button.arco-radio-checked) {
+  background: #fff;
+  color: #1d1d1f;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-weight: 500;
+}
+
+.result-tag {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
   .page-title { font-size: 24px; }
   .filter-toolbar { padding: 16px; }
 }

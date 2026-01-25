@@ -337,15 +337,16 @@ onBeforeUnmount(() => {
 }
 
 .page-title {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .page-subtitle {
-  font-size: 16px;
-  color: #8e8e93;
+  font-size: 17px;
+  color: rgba(60, 60, 67, 0.6);
   margin: 0;
 }
 
@@ -355,9 +356,12 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-bottom: 24px;
   padding: 16px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .item-count {
