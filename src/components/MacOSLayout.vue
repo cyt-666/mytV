@@ -239,6 +239,7 @@ watch(route, async () => {
   background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* Sidebar */
@@ -251,6 +252,7 @@ watch(route, async () => {
   flex-shrink: 0;
   user-select: none;
   padding-bottom: 16px;
+  overflow-x: hidden;
 }
 
 .window-drag-region {
@@ -261,7 +263,7 @@ watch(route, async () => {
 
 /* Search */
 .sidebar-search-wrapper {
-  padding: 0 16px 16px 16px;
+  padding: 0 16px 16px 24px;
 }
 
 .macos-search-input {
@@ -422,6 +424,7 @@ watch(route, async () => {
   position: relative;
   min-width: 0;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .main-drag-region {
@@ -436,6 +439,7 @@ watch(route, async () => {
 
 .content-scroll-container {
   flex: 1;
+  width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: 52px;
