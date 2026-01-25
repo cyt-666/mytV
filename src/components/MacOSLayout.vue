@@ -235,7 +235,7 @@ watch(route, async () => {
 .macos-layout {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   overflow: hidden;
@@ -421,6 +421,7 @@ watch(route, async () => {
   background: #fff;
   position: relative;
   min-width: 0;
+  overflow: hidden;
 }
 
 .main-drag-region {
