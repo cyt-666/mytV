@@ -2,24 +2,28 @@
 
 :root {
   /* Light Mode (Default) - Liquid Glass */
-  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-bg-base: rgba(255, 255, 255, 0.4);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.6);
   --glass-border: rgba(255, 255, 255, 0.4);
   --glass-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.1);
   --glass-blur: blur(20px);
   --glass-text: #1d1d1f;
   --glass-text-secondary: #86868b;
-  --glass-overlay-bg: rgba(255, 255, 255, 0.4);
+  
+  /* Legacy/Alias support for backward compatibility */
+  --glass-bg: var(--glass-bg-base);
+  --glass-overlay-bg: var(--glass-bg-elevated);
 }
 
 .theme-dark {
   /* Dark Mode - Deep Liquid */
-  --glass-bg: rgba(30, 30, 30, 0.4);
+  --glass-bg-base: rgba(30, 30, 30, 0.4);
+  --glass-bg-elevated: rgba(40, 40, 40, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5);
   --glass-blur: blur(28px);
   --glass-text: #f5f5f7;
   --glass-text-secondary: #86868b;
-  --glass-overlay-bg: rgba(0, 0, 0, 0.4);
   
   --color-fill-2: rgba(255, 255, 255, 0.08); /* Dark mode fill */
 }

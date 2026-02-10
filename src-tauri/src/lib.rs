@@ -174,7 +174,7 @@ pub fn run() {
                 // set state to Active so effect is visible even when window is inactive
                 apply_vibrancy(
                     &window,
-                    NSVisualEffectMaterial::Sidebar,
+                    NSVisualEffectMaterial::UnderWindowBackground,
                     Some(window_vibrancy::NSVisualEffectState::Active),
                     None,
                 )
