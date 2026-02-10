@@ -25,6 +25,11 @@ html, body {
   background: #f5f5f7 !important;
 }
 
+/* MacOS Global Transparency */
+.platform-macos, .platform-macos body, .platform-macos #app {
+  background: transparent !important;
+}
+
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
   width: 8px;

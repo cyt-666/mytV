@@ -262,7 +262,7 @@ onBeforeUnmount(() => {
 /* Sidebar */
 .macos-sidebar {
   width: 260px;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle tint over vibrancy */
   border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 }
 
 .macos-search-input:focus-within {
-  background: #fff;
+  background: var(--glass-bg-elevated);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3); /* macOS Focus Ring */
 }
 
