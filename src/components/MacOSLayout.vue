@@ -304,6 +304,12 @@ onBeforeUnmount(() => {
   background: rgba(0, 0, 0, 0.1);
 }
 
+@media (max-width: 700px) {
+  .macos-titlebar-back-btn {
+    display: none;
+  }
+}
+
 /* Search */
 .sidebar-search-wrapper {
   padding: 0 16px 16px 24px;
