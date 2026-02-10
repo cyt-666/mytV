@@ -252,7 +252,8 @@ onBeforeUnmount(() => {
 .macos-layout {
   /* Traffic Lights Metrics */
   --macos-traffic-lights-safe-width: 72px;
-  --macos-traffic-lights-gap: 10px;
+  --macos-traffic-lights-gap: 14px;
+  --macos-back-btn-y-offset: 3px;
 
   display: flex;
   height: 100vh;
@@ -299,6 +300,7 @@ onBeforeUnmount(() => {
   transition: background 0.2s, color 0.2s;
   background: transparent;
   border: none;
+  transform: translateY(var(--macos-back-btn-y-offset));
 }
 
 .macos-titlebar-back-btn:hover {
