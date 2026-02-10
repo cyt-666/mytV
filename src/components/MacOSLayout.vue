@@ -251,7 +251,7 @@ watch(route, async () => {
   flex-direction: column;
   flex-shrink: 0;
   user-select: none;
-  padding-bottom: 16px;
+  /* padding-bottom: 16px; Removed to allow footer to be a full bar */
   overflow-x: hidden;
 }
 
@@ -362,8 +362,10 @@ watch(route, async () => {
 
 /* Footer */
 .sidebar-footer {
-  padding: 12px 16px 0 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--glass-border);
+  background: var(--glass-bg); /* Use glass variable for consistency */
+  backdrop-filter: var(--glass-blur); /* Ensure consistent blur */
 }
 
 .user-profile-card {

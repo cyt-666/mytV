@@ -101,15 +101,21 @@
   color: var(--glass-text);
 }
 
-/* Modal / Drawer Rounding */
+/* Modal / Drawer / Popover Rounding */
 .platform-macos .arco-modal,
-.platform-macos .arco-drawer {
+.platform-macos .arco-drawer,
+.platform-macos .arco-popover-popup-content {
   border-radius: 12px;
-  background: var(--glass-bg);
+  background: var(--glass-overlay-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+}
+
+.platform-macos .arco-popover-arrow {
+  background: var(--glass-overlay-bg);
+  border: 1px solid var(--glass-border);
 }
 
 .platform-macos .arco-modal-header,

@@ -305,7 +305,7 @@ onUnmounted(() => {
 
 /* MacOS Hover Refinement */
 :global(.platform-macos) .media-card:hover {
-  transform: scale(1.03) translateY(-3px); /* More subtle lift on macOS */
+  transform: scale(1.03) translateY(-4px); /* More subtle lift on macOS */
 }
 
 .poster-container {
@@ -315,13 +315,15 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: var(--macos-radius-lg, 12px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 默认柔和阴影 */
-  transition: box-shadow 0.4s ease;
+  transition: box-shadow 0.4s ease, transform 0.4s ease;
   background: #f0f0f0;
 }
 
 /* MacOS Shadow & Border Integration */
 :global(.platform-macos) .poster-container {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.65));
   box-shadow: 0 4px 10px rgba(0,0,0,0.08), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.1));
+  backdrop-filter: blur(10px);
 }
 
 .media-card:hover .poster-container {
@@ -329,7 +331,7 @@ onUnmounted(() => {
 }
 
 :global(.platform-macos) .media-card:hover .poster-container {
-  box-shadow: 0 12px 24px rgba(0,0,0,0.12), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.3));
+  box-shadow: 0 16px 32px rgba(0,0,0,0.15), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.4));
 }
 
 .media-poster {
