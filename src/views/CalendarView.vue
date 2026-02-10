@@ -264,25 +264,25 @@ onMounted(() => {
   font-size: 32px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   letter-spacing: -0.5px;
 }
 
 .page-subtitle {
   font-size: 16px;
-  color: #86868b;
+  color: var(--glass-text-secondary, #86868b);
   margin: 0;
 }
 
 .toolbar {
   margin-bottom: 32px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid var(--glass-border, rgba(0,0,0,0.05));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -290,7 +290,7 @@ onMounted(() => {
 
 .item-count {
   font-size: 14px;
-  color: #86868b;
+  color: var(--glass-text-secondary, #86868b);
   font-weight: 500;
 }
 
@@ -347,14 +347,14 @@ onMounted(() => {
 .timeline-label {
   font-size: 24px;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   margin: 0;
   letter-spacing: -0.5px;
 }
 
 .timeline-date-raw {
   font-size: 14px;
-  color: #86868b;
+  color: var(--glass-text-secondary, #86868b);
   font-weight: 500;
 }
 
@@ -367,15 +367,18 @@ onMounted(() => {
 .episode-card {
   border-radius: 16px;
   border: none;
-  background: #ffffff;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.5));
+  backdrop-filter: var(--glass-blur, blur(10px));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   overflow: hidden;
+  border: 1px solid var(--glass-border, rgba(0,0,0,0.05));
 }
 
 .episode-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+  background: var(--glass-overlay-bg, rgba(255, 255, 255, 0.8));
 }
 
 :deep(.arco-card-body) {
@@ -425,7 +428,7 @@ onMounted(() => {
 .show-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -434,7 +437,7 @@ onMounted(() => {
 
 .episode-title {
   font-size: 14px;
-  color: #424245;
+  color: var(--glass-text-secondary, #424245);
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -455,7 +458,7 @@ onMounted(() => {
 
 .air-time {
   font-size: 13px;
-  color: #86868b;
+  color: var(--glass-text-secondary, #86868b);
   font-weight: 500;
   display: flex;
   align-items: center;

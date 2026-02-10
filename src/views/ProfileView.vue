@@ -205,7 +205,7 @@ const formatJoinDate = (dateString?: string) => {
   justify-content: space-between;
   align-items: center;
   padding: 32px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--glass-border);
   margin-bottom: 32px;
 }
 
@@ -223,12 +223,12 @@ const formatJoinDate = (dateString?: string) => {
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 4px 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .user-bio {
   font-size: 14px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary);
   margin: 0;
 }
 
@@ -240,38 +240,60 @@ const formatJoinDate = (dateString?: string) => {
 }
 
 .stat-item {
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   text-align: center;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--glass-text);
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary);
 }
 
 .feature-menu {
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
 }
 
-.feature-menu .arco-list-item {
+.feature-menu :deep(.arco-list-item) {
   cursor: pointer;
   transition: background-color 0.2s ease;
+  color: var(--glass-text);
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.feature-menu .arco-list-item:hover {
-  background: #f8f9fa;
+.feature-menu :deep(.arco-list-item-meta-title) {
+  color: var(--glass-text);
+  font-weight: 500;
+}
+
+.feature-menu :deep(.arco-list-item-meta-description) {
+  color: var(--glass-text-secondary);
+}
+
+.feature-menu :deep(.arco-list-item:hover) {
+  background: var(--glass-overlay-bg);
+}
+
+.feature-menu :deep(.arco-list-item:last-child) {
+  border-bottom: none;
 }
 
 @media (max-width: 768px) {

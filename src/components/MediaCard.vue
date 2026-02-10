@@ -316,7 +316,7 @@ onUnmounted(() => {
   border-radius: var(--macos-radius-lg, 12px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* 默认柔和阴影 */
   transition: box-shadow 0.4s ease, transform 0.4s ease;
-  background: #f0f0f0;
+  background: var(--color-fill-2);
 }
 
 /* MacOS Shadow & Border Integration */
@@ -347,11 +347,11 @@ onUnmounted(() => {
 .poster-placeholder {
   width: 100%;
   height: 100%;
-  background: #f5f5f7;
+  background: var(--color-fill-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #86909c;
+  color: var(--color-text-3);
 }
 
 /* 标签样式优化 */
@@ -416,7 +416,7 @@ onUnmounted(() => {
   font-weight: 600;
   margin: 0 0 4px 0;
   line-height: 1.4;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   display: -webkit-box;
   -webkit-line-clamp: 1; /* 单行显示，整洁 */
   -webkit-box-orient: vertical;
@@ -427,14 +427,14 @@ onUnmounted(() => {
 }
 
 .media-card:hover .media-title {
-  color: #165dff; /* 悬停变色 */
+  color: rgb(var(--primary-6)); /* 悬停变色 */
 }
 
 .translation-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
-  background: #165dff;
+  background: rgb(var(--primary-6));
   border-radius: 50%;
   margin-left: 4px;
   vertical-align: middle;
@@ -442,7 +442,7 @@ onUnmounted(() => {
 
 .media-year {
   font-size: 13px;
-  color: #86909c;
+  color: var(--glass-text-secondary, #86909c);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -457,8 +457,8 @@ onUnmounted(() => {
 }
 
 .genre-tag {
-  background: #f2f3f5;
-  color: #4e5969;
+  background: var(--color-fill-2);
+  color: var(--color-text-2);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
@@ -467,7 +467,7 @@ onUnmounted(() => {
 
 .runtime {
   font-size: 11px;
-  color: #86909c;
+  color: var(--glass-text-secondary, #86909c);
 }
 
 /* 响应式 */

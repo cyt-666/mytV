@@ -210,11 +210,34 @@ onUnmounted(() => {
 }
 
 .loading-card {
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--glass-shadow);
 }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--glass-text-secondary);
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--glass-text);
+}
+
+.loading-skeleton {
+  background: linear-gradient(90deg, var(--glass-overlay-bg) 25%, var(--glass-border) 50%, var(--glass-overlay-bg) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
 
 .loading-poster {
   width: 100%;
@@ -239,7 +262,7 @@ onUnmounted(() => {
 }
 
 .loading-skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--glass-overlay-bg) 25%, var(--glass-border) 50%, var(--glass-overlay-bg) 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
 }
@@ -256,7 +279,7 @@ onUnmounted(() => {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary);
 }
 
 .empty-icon {
@@ -268,7 +291,7 @@ onUnmounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .empty-description {

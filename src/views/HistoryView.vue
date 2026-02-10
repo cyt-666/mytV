@@ -478,12 +478,12 @@ onBeforeUnmount(() => {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0 0 8px 0;
-  color: rgba(0, 0, 0, 0.88);
+  color: var(--glass-text, rgba(0, 0, 0, 0.88));
 }
 
 .page-subtitle {
   font-size: 17px;
-  color: rgba(60, 60, 67, 0.6);
+  color: var(--glass-text-secondary, rgba(60, 60, 67, 0.6));
   margin: 0;
 }
 
@@ -495,12 +495,12 @@ onBeforeUnmount(() => {
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   padding: 24px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   text-align: center;
 }
@@ -523,17 +523,61 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-bottom: 24px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+/* ... */
+.timeline-count {
+  font-size: 14px;
+  color: #8e8e93;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.timeline-content {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--glass-text, #1d1d1f);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--glass-text-secondary, #8e8e93);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+  border-radius: 16px;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .item-count {
   font-size: 14px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary, #8e8e93);
 }
 
 /* 时间轴样式 */
@@ -584,32 +628,32 @@ onBeforeUnmount(() => {
 .timeline-label {
   font-size: 18px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   margin: 0;
 }
 
 .timeline-count {
   font-size: 14px;
-  color: #8e8e93;
-  background: #f5f5f5;
+  color: var(--glass-text-secondary, #8e8e93);
+  background: var(--glass-overlay-bg, #f5f5f5);
   padding: 2px 10px;
   border-radius: 12px;
 }
 
 .timeline-content {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary, #8e8e93);
 }
 
 .load-more-container {

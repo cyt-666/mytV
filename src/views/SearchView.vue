@@ -570,12 +570,12 @@ onBeforeUnmount(() => {
   font-size: 32px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .search-subtitle {
   font-size: 16px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary);
   margin: 0;
 }
 
@@ -606,12 +606,12 @@ onBeforeUnmount(() => {
   font-size: 24px;
   font-weight: 600;
   margin: 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .results-count {
   font-size: 16px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary);
   font-weight: 400;
 }
 
@@ -630,14 +630,14 @@ onBeforeUnmount(() => {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 24px 0; /* 增加标题底部间距 20px -> 24px */
-  color: #1d1d1f;
+  color: var(--glass-text);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .clear-btn {
-  color: #86909c;
+  color: var(--glass-text-secondary);
 }
 
 .clear-btn:hover {
@@ -657,16 +657,19 @@ onBeforeUnmount(() => {
   height: 36px;
   line-height: 24px;
   font-size: 14px;
-  background: #f7f8fa;
-  border: 1px solid transparent;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 18px;
-  color: #4e5969;
+  color: var(--glass-text-secondary);
   transition: all 0.2s ease;
+  box-shadow: var(--glass-shadow);
 }
 
 .history-tag:hover {
-  background: #e5e6eb;
-  color: #1d1d1f;
+  background: var(--glass-overlay-bg);
+  color: var(--glass-text);
 }
 
 .trending-section {
@@ -683,22 +686,27 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: #f7f8fa;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--glass-shadow);
 }
 
 .top-search-item:hover {
-  background: #e5e6eb;
+  background: var(--glass-overlay-bg);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
 .rank-number {
   font-size: 18px;
   font-weight: 700;
   width: 32px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   font-style: italic;
 }
 
@@ -715,7 +723,7 @@ onBeforeUnmount(() => {
 .item-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--glass-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -724,7 +732,7 @@ onBeforeUnmount(() => {
 
 .item-meta {
   font-size: 12px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -745,7 +753,7 @@ onBeforeUnmount(() => {
   grid-column: span 2;
   text-align: center;
   padding: 40px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
 }
 
 @media (max-width: 640px) {

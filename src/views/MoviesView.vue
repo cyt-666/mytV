@@ -226,7 +226,7 @@ watch(isLoggedIn, (newVal) => {
 
 <style scoped>
 .page-header { margin-bottom: 24px; }
-.page-title { font-size: 32px; font-weight: 800; color: #1d1d1f; margin: 0; }
+.page-title { font-size: 32px; font-weight: 800; color: var(--glass-text); margin: 0; }
 
 .tab-title {
   display: flex;

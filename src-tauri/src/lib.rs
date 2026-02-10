@@ -170,8 +170,15 @@ pub fn run() {
 
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(target_os = "macos")]
-                apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None)
-                    .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+                // Use Sidebar for a more "native" vibrant material look
+                // set state to Active so effect is visible even when window is inactive
+                apply_vibrancy(
+                    &window,
+                    NSVisualEffectMaterial::Sidebar,
+                    Some(window_vibrancy::NSVisualEffectState::Active),
+                    None,
+                )
+                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
 
                 #[cfg(target_os = "windows")]
                 {

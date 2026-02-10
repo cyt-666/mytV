@@ -330,7 +330,7 @@ onMounted(() => {
 <style scoped>
 .season-detail-view {
   min-height: 100vh;
-  background: #f7f8fa;
+  /* background: #f7f8fa; removed for glass transparency */
   padding: 20px;
 }
 
@@ -345,17 +345,20 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 60vh;
-  color: #86909c;
+  color: var(--glass-text-secondary);
 }
 
 .header-section {
   display: flex;
   gap: 30px;
   margin-bottom: 40px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   padding: 30px;
   border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .season-poster {
@@ -371,12 +374,12 @@ onMounted(() => {
 .season-title {
   margin: 0 0 10px 0;
   font-size: 32px;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .meta-row {
   margin-bottom: 20px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   font-size: 14px;
 }
 
@@ -388,23 +391,28 @@ onMounted(() => {
 .episodes-list h3 {
   margin-bottom: 20px;
   font-size: 20px;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .episode-card {
   display: flex;
   gap: 20px;
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 16px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--glass-shadow);
 }
 
 .episode-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  background: var(--glass-overlay-bg);
 }
 
 .episode-screenshot {
@@ -424,12 +432,13 @@ onMounted(() => {
 .episode-screenshot-placeholder {
   width: 200px;
   height: 112px;
-  background: #f0f0f0;
+  background: var(--glass-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
+  color: var(--glass-text-secondary);
   border-radius: 8px;
+  border: 1px solid var(--glass-border);
 }
 
 .episode-info {
@@ -446,23 +455,24 @@ onMounted(() => {
 .episode-idx {
   font-size: 24px;
   font-weight: 700;
-  color: #e5e6eb;
+  color: var(--glass-text-secondary);
+  opacity: 0.3;
 }
 
 .episode-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .episode-meta {
   font-size: 13px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   margin-bottom: 12px;
 }
 
 .episode-overview {
-  color: #4e5969;
+  color: var(--glass-text);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;

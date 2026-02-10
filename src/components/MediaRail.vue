@@ -85,7 +85,7 @@ const emitClickTitle = () => {
 .rail-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   margin: 0;
   display: inline-flex;
   align-items: center;

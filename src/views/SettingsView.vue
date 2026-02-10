@@ -7,10 +7,31 @@
       </div>
 
       <!-- 设置区域 -->
-      <div class="settings-container">
+        <div class="settings-container">
         <h2 class="section-title">应用偏好</h2>
         
         <div class="settings-card">
+          <!-- 主题设置 -->
+          <div class="setting-item">
+            <div class="setting-icon">
+              <icon-skin />
+            </div>
+            <div class="setting-content">
+              <div class="setting-text">
+                <div class="setting-title">外观主题</div>
+                <div class="setting-desc">选择应用的主题外观</div>
+              </div>
+              <div class="setting-control">
+                <a-radio-group v-model="themeMode" type="button" @change="setTheme">
+                  <a-radio value="light">浅色</a-radio>
+                  <a-radio value="dark">深色</a-radio>
+                  <a-radio value="system">跟随系统</a-radio>
+                </a-radio-group>
+              </div>
+            </div>
+          </div>
+
+          <!-- 日志级别 -->
           <div class="setting-item">
             <div class="setting-icon">
               <icon-bug />
@@ -48,10 +69,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { IconBug } from '@arco-design/web-vue/es/icon'
+import { IconBug, IconSkin } from '@arco-design/web-vue/es/icon'
 import { invoke } from '@tauri-apps/api/core'
 import { Message } from '@arco-design/web-vue'
+import { useTheme } from '../composables/useTheme'
 
+const { themeMode, setTheme } = useTheme()
 const logLevel = ref('info')
 
 const loadSettings = async () => {
@@ -101,24 +124,27 @@ onMounted(() => {
   font-size: 32px;
   font-weight: 700;
   margin: 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
   letter-spacing: -0.5px;
 }
 
 .section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #86868b;
+  color: var(--glass-text-secondary);
   margin: 0 0 12px 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .settings-card {
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-shadow);
 }
 
 .setting-item {
@@ -130,15 +156,15 @@ onMounted(() => {
 }
 
 .setting-item:not(:last-child) {
-  border-bottom: 1px solid #f2f3f5;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .setting-icon {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #f2f3f5;
-  color: #4e5969;
+  background: rgba(128, 128, 128, 0.1);
+  color: var(--glass-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,13 +186,13 @@ onMounted(() => {
 .setting-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--glass-text);
   margin-bottom: 4px;
 }
 
 .setting-desc {
   font-size: 13px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   line-height: 1.4;
 }
 
@@ -174,7 +200,8 @@ onMounted(() => {
   margin-top: 32px;
   text-align: center;
   font-size: 12px;
-  color: #c9ccd4;
+  color: var(--glass-text-secondary);
+  opacity: 0.6;
 }
 
 @media (max-width: 640px) {

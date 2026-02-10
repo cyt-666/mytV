@@ -663,10 +663,117 @@ const checkUserStatus = async () => {
 }
 
 .detailed-info {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--glass-bg);
   padding: 24px;
   border-radius: 16px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: var(--glass-text);
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--glass-text-secondary);
+  min-width: 80px;
+}
+
+.value {
+  color: var(--glass-text);
+}
+
+.homepage-link {
+  color: #0A84FF;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.homepage-link:hover {
+  text-decoration: underline;
+}
+
+.movie-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--glass-text);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.original-title {
+  font-size: 18px;
+  color: var(--glass-text-secondary);
+  margin: 0 0 8px 0;
+  font-style: italic;
+}
+
+.tagline {
+  font-size: 16px;
+  color: var(--glass-text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+.score {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--glass-text);
+}
+
+.votes {
+  font-size: 14px;
+  color: var(--glass-text-secondary);
+}
+
+.overview h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--glass-text);
+}
+
+.overview p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--glass-text);
+  margin: 0;
+}
+
+.poster-placeholder {
+  width: 100%;
+  aspect-ratio: 2/3;
+  background: var(--glass-overlay-bg);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--glass-text-secondary);
+  margin-bottom: 24px;
+  border: 1px solid var(--glass-border);
+}
+
+.movie-detail-content {
+  position: relative;
+  min-height: 100vh;
+  color: var(--glass-text);
 }
 
 .info-grid {

@@ -349,8 +349,8 @@ onMounted(() => {
   font-weight: 600;
   backdrop-filter: blur(10px);
 }
-.hero-year { background: rgba(255,255,255,0.15); color: #fff; }
-.hero-rating { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+.hero-year { background: var(--glass-overlay-bg); color: #fff; border: 1px solid var(--glass-border); }
+.hero-rating { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
 
 .hero-actions :deep(.arco-btn) {
   height: 48px;

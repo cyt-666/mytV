@@ -422,7 +422,7 @@ watch(route, async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
+  background: transparent; /* Changed from var(--glass-bg) to transparent to show vibrancy */
   position: relative;
   min-width: 0;
   overflow: hidden;
@@ -475,21 +475,23 @@ watch(route, async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #333;
+  color: var(--glass-text);
   font-size: 16px;
 }
 
 .global-back-btn:hover {
-  background: #fff;
+  background: var(--glass-overlay-bg);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-  color: #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: var(--glass-text);
 }
 
 .global-back-btn:active {

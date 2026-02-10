@@ -292,14 +292,14 @@ onBeforeUnmount(() => {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #ffffff; /* 整体白色背景，去除分割线感 */
+  background: var(--glass-bg, #ffffff); /* Use glass variable if available, fallback to white */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 /* 侧边栏 - 现代流媒体风格 */
 .app-sider {
-  background-color: #ffffff;
+  background-color: var(--glass-bg, #ffffff);
   position: relative;
   z-index: 10;
   border-right: none !important; /* 强制去掉分割线 */
@@ -358,9 +358,7 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 20px;
   font-weight: 800;
-  background: linear-gradient(135deg, #1d1d1f 0%, #333 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--glass-text, #1d1d1f);
   letter-spacing: -0.5px;
 }
 
@@ -397,7 +395,7 @@ onBeforeUnmount(() => {
   height: 48px;
   margin-bottom: 8px;
   border-radius: 16px; /* 大圆角 */
-  color: #4e5969;
+  color: var(--glass-text-secondary, #4e5969);
   font-size: 15px;
   font-weight: 500;
   display: flex;
@@ -408,13 +406,13 @@ onBeforeUnmount(() => {
 :deep(.arco-menu-item:hover), 
 :deep(.arco-menu-pop-header:hover), 
 :deep(.arco-menu-inline-header:hover) {
-  background-color: #f7f8fa;
-  color: #1d1d1f;
+  background-color: var(--glass-overlay-bg, #f7f8fa);
+  color: var(--glass-text, #1d1d1f);
 }
 
 /* 选中效果 - 柔和色块 */
 :deep(.arco-menu-selected) { 
-  background-color: #f0f4ff !important; /* 极淡蓝 */
+  background-color: var(--glass-overlay-bg, #f0f4ff) !important; /* 极淡蓝 */
   color: #165dff !important;
   font-weight: 600;
 }
@@ -506,8 +504,8 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 .sider-trigger:hover {
-  background-color: #f7f8fa;
-  color: #1d1d1f;
+  background-color: var(--glass-overlay-bg, #f7f8fa);
+  color: var(--glass-text, #1d1d1f);
 }
 
 /* 右侧主布局容器 */
@@ -516,14 +514,14 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: #ffffff; /* 与左侧一致，无缝融合 */
+  background-color: var(--glass-bg, #ffffff); /* 与左侧一致，无缝融合 */
 }
 
 /* Header - 极简 */
 .app-header {
   height: 72px;
-  background: rgba(255,255,255,0.8);
-  backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255,255,255,0.8));
+  backdrop-filter: var(--glass-blur, blur(20px));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -555,14 +553,14 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #4e5969;
+  color: var(--glass-text-secondary, #4e5969);
   transition: all 0.2s;
   font-size: 18px; /* 增大图标 */
 }
 
 .control-btn:hover {
-  background-color: rgba(0,0,0,0.06);
-  color: #1d1d1f;
+  background-color: var(--glass-overlay-bg, rgba(0,0,0,0.06));
+  color: var(--glass-text, #1d1d1f);
 }
 
 .close-btn:hover {
@@ -585,34 +583,35 @@ onBeforeUnmount(() => {
 
 :deep(.arco-input-wrapper) { 
   border-radius: 20px; 
-  background: #f2f3f5; 
+  background: var(--glass-overlay-bg, #f2f3f5); 
   border: 1px solid transparent; 
   height: 40px;
   padding: 0 16px;
+  color: var(--glass-text, #1d1d1f);
 }
 :deep(.arco-input-wrapper:focus-within) { 
-  background: #ffffff; 
+  background: var(--glass-bg, #ffffff); 
   border-color: #165dff;
   box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
 }
 
 /* 按钮样式 */
 .user-btn { 
-  color: #1d1d1f; 
+  color: var(--glass-text, #1d1d1f); 
   font-size: 14px; 
   font-weight: 600;
   height: 40px;
   border-radius: 20px;
   padding: 0 20px;
 }
-.user-btn:hover { background-color: #f7f8fa; }
+.user-btn:hover { background-color: var(--glass-overlay-bg, #f7f8fa); }
 
 .global-back-button {
   width: 40px;
   height: 40px;
   padding: 0;
   border-radius: 50%;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   background: transparent;
   transition: all 0.2s;
   display: flex;
@@ -620,12 +619,12 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 .global-back-button:hover {
-  background-color: #f2f3f5; /* 悬停时显示浅灰背景 */
+  background-color: var(--glass-overlay-bg, #f2f3f5); /* 悬停时显示浅灰背景 */
   transform: scale(1.1); /* 稍微放大更多一点 */
 }
 .global-back-button:active {
   transform: scale(0.95);
-  background-color: #e5e6eb;
+  background-color: var(--glass-overlay-bg, #e5e6eb);
 }
 .global-back-button:active {
   transform: scale(0.95);

@@ -760,12 +760,12 @@ const checkUserStatus = async () => {
 .poster-placeholder {
   width: 100%;
   aspect-ratio: 2/3;
-  background: #f5f5f5;
+  background: var(--glass-overlay-bg, #f5f5f5);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #bbb;
+  color: var(--glass-text-secondary, #bbb);
   margin-bottom: 24px;
 }
 
@@ -814,7 +814,7 @@ const checkUserStatus = async () => {
   font-size: 36px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   line-height: 1.2;
   display: flex;
   align-items: center;
@@ -823,14 +823,14 @@ const checkUserStatus = async () => {
 
 .original-title {
   font-size: 18px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary, #8e8e93);
   margin: 0 0 8px 0;
   font-style: italic;
 }
 
 .tagline {
   font-size: 16px;
-  color: #6b7280;
+  color: var(--glass-text-secondary, #6b7280);
   margin: 0;
   font-style: italic;
 }
@@ -853,12 +853,12 @@ const checkUserStatus = async () => {
 .score {
   font-size: 24px;
   font-weight: 700;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
 }
 
 .votes {
   font-size: 14px;
-  color: #8e8e93;
+  color: var(--glass-text-secondary, #8e8e93);
 }
 
 .basic-info {
@@ -869,7 +869,7 @@ const checkUserStatus = async () => {
 
 .info-item {
   padding: 4px 12px;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--glass-overlay-bg, rgba(0, 0, 0, 0.05));
   border-radius: 16px;
   font-size: 14px;
   font-weight: 500;
@@ -907,7 +907,7 @@ const checkUserStatus = async () => {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 12px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
 }
 
 .air-details {
@@ -930,13 +930,13 @@ const checkUserStatus = async () => {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 12px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
 }
 
 .overview p {
   font-size: 16px;
   line-height: 1.6;
-  color: #374151;
+  color: var(--glass-text, #374151);
   margin: 0;
 }
 
@@ -948,7 +948,7 @@ const checkUserStatus = async () => {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 12px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
 }
 
 .seasons-loading {
@@ -967,13 +967,34 @@ const checkUserStatus = async () => {
 }
 
 .season-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.8));
   padding: 24px;
   border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: var(--glass-blur, blur(10px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+.season-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  background: var(--glass-overlay-bg, rgba(255, 255, 255, 0.9));
+}
+
+.season-card.is-expanded {
+  background: var(--glass-overlay-bg, white);
+  border-color: rgba(var(--primary-6), 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: none;
+}
+/* ... */
+.detailed-info {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.8));
+  padding: 24px;
+  border-radius: 16px;
+  backdrop-filter: var(--glass-blur, blur(10px));
+  border: 1px solid var(--glass-border, rgba(0,0,0,0.05));
 }
 
 .season-card:hover {
@@ -982,7 +1003,7 @@ const checkUserStatus = async () => {
 }
 
 .season-card.is-expanded {
-  background: white;
+  background: var(--glass-overlay-bg, white);
   border-color: rgba(var(--primary-6), 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transform: none;
@@ -1008,7 +1029,7 @@ const checkUserStatus = async () => {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1175,8 +1196,8 @@ const checkUserStatus = async () => {
 .stat-item {
   font-size: 14px;
   font-weight: 500;
-  color: #1d1d1f;
-  background: rgba(0, 0, 0, 0.05);
+  color: var(--glass-text, #1d1d1f);
+  background: var(--glass-overlay-bg, rgba(0, 0, 0, 0.05));
   padding: 4px 8px;
   border-radius: 8px;
 }
@@ -1194,10 +1215,11 @@ const checkUserStatus = async () => {
 }
 
 .detailed-info {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.8));
   padding: 24px;
   border-radius: 16px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: var(--glass-blur, blur(10px));
+  border: 1px solid var(--glass-border, rgba(0,0,0,0.05));
 }
 
 .info-grid {
@@ -1219,7 +1241,7 @@ const checkUserStatus = async () => {
 }
 
 .value {
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
 }
 
 .homepage-link {
@@ -1293,6 +1315,6 @@ const checkUserStatus = async () => {
 .show-detail-content {
   position: relative;
   min-height: 100vh;
-  color: white;
+  color: var(--glass-text, white);
 }
 </style>

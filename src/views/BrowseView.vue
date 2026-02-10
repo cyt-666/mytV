@@ -309,11 +309,11 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 24px;
 }
-.page-title { font-size: 32px; font-weight: 800; color: #1d1d1f; margin: 0; }
+.page-title { font-size: 32px; font-weight: 800; color: var(--glass-text, #1d1d1f); margin: 0; }
 
 /* Segmented Control Styles */
 .custom-segmented-control {
-  background-color: rgba(118, 118, 128, 0.12);
+  background-color: var(--glass-overlay-bg, rgba(118, 118, 128, 0.12));
   padding: 4px;
   border-radius: 9px;
   border: none;
@@ -324,7 +324,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   border-radius: 7px;
-  color: #555;
+  color: var(--glass-text-secondary, #555);
   font-weight: 500;
   padding: 0 16px;
   height: 32px;
@@ -335,25 +335,25 @@ onMounted(() => {
 }
 
 .custom-segmented-control :deep(.arco-radio-button.arco-radio-checked) {
-  background: #ffffff;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.8));
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
-  color: #000;
+  color: var(--glass-text, #000);
   font-weight: 600;
 }
 
 .custom-segmented-control :deep(.arco-radio-button:hover:not(.arco-radio-checked)) {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Filter Toolbar - Glassmorphism */
 .filter-toolbar {
   margin: 0 0 32px 0;
   padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
   display: flex;
   align-items: center;
@@ -363,20 +363,21 @@ onMounted(() => {
 .filter-toolbar :deep(.arco-select-view),
 .filter-toolbar :deep(.arco-input-wrapper) {
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--glass-overlay-bg, rgba(255, 255, 255, 0.5));
   border: 1px solid rgba(0,0,0,0.05);
   box-shadow: 0 2px 4px rgba(0,0,0,0.01);
   transition: all 0.2s ease;
+  color: var(--glass-text);
 }
 .filter-toolbar :deep(.arco-select-view:hover),
 .filter-toolbar :deep(.arco-input-wrapper:hover) {
-  background-color: #fff;
+  background-color: var(--glass-bg, rgba(255, 255, 255, 0.8));
   border-color: rgba(0,0,0,0.1);
 }
 
 /* Radio buttons inside toolbar */
 .filter-toolbar :deep(.arco-radio-group-button) {
-  background-color: rgba(118, 118, 128, 0.12);
+  background-color: var(--glass-overlay-bg, rgba(118, 118, 128, 0.12));
   padding: 2px;
   border-radius: 8px;
   border: none;
@@ -386,11 +387,11 @@ onMounted(() => {
   border: none;
   border-radius: 6px;
   margin: 0;
-  color: #666;
+  color: var(--glass-text-secondary, #666);
 }
 .filter-toolbar :deep(.arco-radio-button.arco-radio-checked) {
-  background: #fff;
-  color: #1d1d1f;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.8));
+  color: var(--glass-text, #1d1d1f);
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   font-weight: 500;
 }

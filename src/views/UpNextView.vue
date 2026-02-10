@@ -289,14 +289,14 @@ onBeforeUnmount(() => {
   font-size: 30px;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   letter-spacing: -0.01em;
 }
 
 .page-subtitle {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 16px;
-  color: #86909c;
+  color: var(--glass-text-secondary, #86909c);
   margin: 0;
 }
 
@@ -321,21 +321,23 @@ onBeforeUnmount(() => {
 
 .up-next-item {
   display: flex;
-  background: #ffffff;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.5));
+  backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 12px;
   padding: 16px;
   gap: 20px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
   box-shadow: none; /* Flat by default */
-  border: 1px solid rgba(0, 0, 0, 0.06); /* Subtle border definition */
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2)); /* Subtle border definition */
   position: relative; /* For z-index context */
 }
 
 .up-next-item:hover {
   transform: scale(1.015); /* Subtle scale */
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* Soft shadow on hover */
-  border-color: rgba(0, 0, 0, 0.0); /* Hide border to blend with shadow or keep it? usually nice to keep light */
+  background: var(--glass-overlay-bg, rgba(255, 255, 255, 0.7));
+  border-color: var(--glass-border, rgba(255, 255, 255, 0.4));
   z-index: 10;
 }
 
@@ -357,11 +359,11 @@ onBeforeUnmount(() => {
 .poster-placeholder {
   width: 100%;
   height: 100%;
-  background: #f2f3f5;
+  background: var(--glass-overlay-bg, #f2f3f5);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c9ccd4;
+  color: var(--glass-text-secondary, #c9ccd4);
 }
 
 .item-content {
@@ -383,7 +385,7 @@ onBeforeUnmount(() => {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 17px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--glass-text, #1d1d1f);
   margin: 0;
   line-height: 1.3;
   white-space: nowrap;
@@ -395,7 +397,7 @@ onBeforeUnmount(() => {
 .last-watched {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 12px;
-  color: #86909c;
+  color: var(--glass-text-secondary, #86909c);
   white-space: nowrap;
   padding-top: 2px;
 }
@@ -404,7 +406,7 @@ onBeforeUnmount(() => {
   margin-bottom: 16px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 14px;
-  color: #4e5969;
+  color: var(--glass-text-secondary, #4e5969);
   display: flex;
   align-items: center;
 }

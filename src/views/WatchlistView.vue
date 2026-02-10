@@ -356,11 +356,11 @@ onBeforeUnmount(() => {
   align-items: center;
   margin-bottom: 24px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.3));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 

@@ -167,7 +167,7 @@ onMounted(() => {
 <style scoped>
 .episode-detail-view {
   min-height: 100vh;
-  background: #f7f8fa;
+  /* background: #f7f8fa; removed for glass transparency */
   padding-bottom: 40px;
 }
 
@@ -183,7 +183,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 60vh;
-  color: #86909c;
+  color: var(--glass-text-secondary);
 }
 
 .navigation-bar {
@@ -191,10 +191,13 @@ onMounted(() => {
 }
 
 .main-section {
-  background: white;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: var(--glass-shadow);
 }
 
 .screenshot-wrapper {
@@ -216,8 +219,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eee;
-  color: #ccc;
+  background: var(--glass-overlay-bg);
+  color: var(--glass-text-secondary);
 }
 
 .info-wrapper {
@@ -228,18 +231,18 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 700;
   margin: 0 0 12px 0;
-  color: #1d1d1f;
+  color: var(--glass-text);
 }
 
 .show-name {
   font-size: 16px;
-  color: #86909c;
+  color: var(--glass-text-secondary);
   font-weight: 500;
   margin-bottom: 4px;
 }
 
 .episode-number {
-  color: #86909c;
+  color: var(--glass-text-secondary);
   margin-right: 8px;
 }
 
@@ -249,11 +252,11 @@ onMounted(() => {
   gap: 16px;
   margin-bottom: 24px;
   font-size: 14px;
-  color: #4e5969;
+  color: var(--glass-text-secondary);
 }
 
 .season-tag {
-  background: #e8f3ff;
+  background: rgba(22, 93, 255, 0.1);
   color: #165dff;
   padding: 2px 8px;
   border-radius: 4px;
@@ -263,12 +266,12 @@ onMounted(() => {
 .overview {
   font-size: 16px;
   line-height: 1.8;
-  color: #4e5969;
+  color: var(--glass-text);
   margin-bottom: 32px;
 }
 
 .actions {
-  border-top: 1px solid #f2f3f5;
+  border-top: 1px solid var(--glass-border);
   padding-top: 24px;
 }
 </style>
