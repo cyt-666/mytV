@@ -1,23 +1,35 @@
-/* MacOS Theme Variables & Overrides */
-/* Scoped entirely to .platform-macos to avoid conflicting with Windows styles */
+/* MacOS Theme Variables & Glass System */
 
+:root {
+  /* Light Mode (Default) - Liquid Glass */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.1);
+  --glass-blur: blur(20px);
+  --glass-text: #1d1d1f;
+  --glass-text-secondary: #86868b;
+  --glass-overlay-bg: rgba(255, 255, 255, 0.4);
+}
+
+.theme-dark {
+  /* Dark Mode - Deep Liquid */
+  --glass-bg: rgba(30, 30, 30, 0.60);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5);
+  --glass-blur: blur(28px);
+  --glass-text: #f5f5f7;
+  --glass-text-secondary: #86868b;
+  --glass-overlay-bg: rgba(0, 0, 0, 0.4);
+}
+
+/* Base MacOS Platform Styles */
 .platform-macos {
   /* Fonts */
   --macos-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --macos-font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   
-  /* Colors & Glass Effects */
-  --macos-glass-bg: rgba(255, 255, 255, 0.75);
-  --macos-glass-border: rgba(255, 255, 255, 0.5);
-  --macos-glass-blur: blur(20px);
-  
-  /* Dark mode variants should be handled by system preference or theme toggles if present */
-  /* For now we set base defaults */
-}
-
-/* Apply Fonts */
-.platform-macos {
   font-family: var(--macos-font-text);
+  color: var(--glass-text);
 }
 
 .platform-macos h1, 
@@ -27,11 +39,32 @@
 .platform-macos h5, 
 .platform-macos h6 {
   font-family: var(--macos-font-display);
+  color: var(--glass-text);
 }
+
+/* Glass Utilities */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  color: var(--glass-text);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+.glass-overlay {
+  background: var(--glass-overlay-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Original Arco Design Overrides for MacOS Feel */
 
 /* Rounded Buttons Override */
 .platform-macos .arco-btn {
-  border-radius: 6px; /* MacOS style rounding */
+  border-radius: 6px;
   transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
@@ -52,25 +85,38 @@
 .platform-macos .arco-select-view,
 .platform-macos .arco-textarea-wrapper {
   border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle input background */
+  border-color: var(--glass-border);
 }
 
 /* Card / Container Rounding */
 .platform-macos .arco-card {
   border-radius: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.platform-macos .arco-card-body {
+  color: var(--glass-text);
 }
 
 /* Modal / Drawer Rounding */
 .platform-macos .arco-modal,
 .platform-macos .arco-drawer {
   border-radius: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
-/* Glass Effect Utilities */
-.platform-macos .macos-glass {
-  background: var(--macos-glass-bg);
-  backdrop-filter: var(--macos-glass-blur);
-  -webkit-backdrop-filter: var(--macos-glass-blur);
-  border: 1px solid var(--macos-glass-border);
+.platform-macos .arco-modal-header,
+.platform-macos .arco-modal-title,
+.platform-macos .arco-drawer-header, 
+.platform-macos .arco-drawer-title {
+  color: var(--glass-text);
 }
 
 /* Scrollbar styling for macOS (thinner, auto-hiding feel) */
@@ -80,14 +126,14 @@
 }
 
 .platform-macos ::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(128, 128, 128, 0.3);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .platform-macos ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(128, 128, 128, 0.5);
 }
 
 .platform-macos ::-webkit-scrollbar-track {

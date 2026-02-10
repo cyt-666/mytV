@@ -2,6 +2,7 @@
 import { defineAsyncComponent, onMounted, provide } from 'vue';
 import { usePlatform } from './composables/usePlatform';
 import { useGlobalAuth } from './composables/useGlobalAuth';
+import { useTheme } from './composables/useTheme';
 
 const { isMacOS } = usePlatform();
 const { 
@@ -15,11 +16,14 @@ const {
   avatarUrl
 } = useGlobalAuth();
 
+const { initTheme, themeMode, setTheme } = useTheme();
+
 // Provide global state for deep injection (views, etc.)
 provide('userInfo', userInfo);
 provide('isLoggedIn', isLoggedIn);
 provide('refreshUserInfo', loadUserProfile);
 provide('authActions', { login, logout, avatarUrl });
+provide('theme', { themeMode, setTheme });
 
 // Lazy load layouts
 const WindowsLayout = defineAsyncComponent(() => import('./components/WindowsLayout.vue'));
@@ -28,6 +32,7 @@ const MacOSLayout = defineAsyncComponent(() => import('./components/MacOSLayout.
 onMounted(() => {
   checkLoginStatus();
   setupOAuthListener();
+  initTheme();
 });
 </script>
 
@@ -45,5 +50,9 @@ onMounted(() => {
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.platform-macos#app {
+  background-color: transparent;
 }
 </style>

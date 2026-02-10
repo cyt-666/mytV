@@ -246,7 +246,7 @@ watch(route, async () => {
 .macos-sidebar {
   width: 260px;
   background-color: transparent;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -274,7 +274,7 @@ watch(route, async () => {
   align-items: center;
   padding: 0 8px;
   transition: background 0.2s, box-shadow 0.2s;
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
 }
 
 .macos-search-input:focus-within {
@@ -283,7 +283,7 @@ watch(route, async () => {
 }
 
 .search-icon {
-  color: #888;
+  color: var(--glass-text-secondary);
   margin-right: 6px;
   font-size: 14px;
 }
@@ -293,11 +293,11 @@ watch(route, async () => {
   background: transparent;
   flex: 1;
   font-size: 13px;
-  color: #333;
+  color: var(--glass-text);
   outline: none;
 }
 .macos-search-input input::placeholder {
-  color: #999;
+  color: var(--glass-text-secondary);
 }
 
 /* Menu */
@@ -314,7 +314,7 @@ watch(route, async () => {
 .group-label {
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--glass-text-secondary);
   margin-bottom: 6px;
   padding-left: 12px;
   text-transform: uppercase;
@@ -329,7 +329,7 @@ watch(route, async () => {
   margin-bottom: 2px;
   border-radius: 6px;
   cursor: default;
-  color: #333;
+  color: var(--glass-text);
   transition: background 0.15s;
 }
 
@@ -341,7 +341,7 @@ watch(route, async () => {
   background-color: rgba(0, 0, 0, 0.08); /* macOS Active State (Inactive Window) */
   /* If window active: background-color: #007aff; color: #fff; */
   /* Since we can't easily detect window focus state in CSS, we use a neutral active state */
-  color: #000;
+  color: var(--glass-text);
   font-weight: 500;
 }
 
@@ -363,7 +363,7 @@ watch(route, async () => {
 /* Footer */
 .sidebar-footer {
   padding: 12px 16px 0 16px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid var(--glass-border);
 }
 
 .user-profile-card {
@@ -393,7 +393,7 @@ watch(route, async () => {
 .user-name {
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--glass-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -420,7 +420,7 @@ watch(route, async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--glass-bg);
   position: relative;
   min-width: 0;
   overflow: hidden;
