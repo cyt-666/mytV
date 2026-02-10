@@ -107,16 +107,24 @@
   color: var(--glass-text);
 }
 
-/* Modal / Drawer / Popover Rounding */
+/* Modal / Drawer / Popover / Dropdown Rounding */
 .platform-macos .arco-modal,
 .platform-macos .arco-drawer,
-.platform-macos .arco-popover-popup-content {
+.platform-macos .arco-popover-popup-content,
+.platform-macos .arco-trigger-popup,
+.platform-macos .arco-dropdown {
   border-radius: 12px;
   background: var(--glass-overlay-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+}
+
+.platform-macos .arco-trigger-content {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .platform-macos .arco-popover-arrow {

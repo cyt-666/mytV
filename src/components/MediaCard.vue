@@ -321,9 +321,11 @@ onUnmounted(() => {
 
 /* MacOS Shadow & Border Integration */
 :global(.platform-macos) .poster-container {
-  background: var(--glass-bg, rgba(255, 255, 255, 0.65));
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.1));
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  transition: all 0.4s ease;
 }
 
 .media-card:hover .poster-container {
@@ -331,7 +333,9 @@ onUnmounted(() => {
 }
 
 :global(.platform-macos) .media-card:hover .poster-container {
-  box-shadow: 0 16px 32px rgba(0,0,0,0.15), 0 0 0 1px var(--macos-glass-border, rgba(255,255,255,0.4));
+  background: var(--glass-bg-elevated);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+  border-color: var(--glass-border);
 }
 
 .media-poster {
