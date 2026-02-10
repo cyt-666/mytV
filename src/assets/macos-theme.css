@@ -13,6 +13,10 @@
   /* Legacy/Alias support for backward compatibility */
   --glass-bg: var(--glass-bg-base);
   --glass-overlay-bg: var(--glass-bg-elevated);
+
+  /* Toolbar Interactions */
+  --macos-toolbar-hover-bg: rgba(0, 0, 0, 0.05);
+  --macos-toolbar-active-bg: rgba(0, 0, 0, 0.1);
 }
 
 .theme-dark {
@@ -26,6 +30,10 @@
   --glass-text-secondary: #86868b;
   
   --color-fill-2: rgba(255, 255, 255, 0.08); /* Dark mode fill */
+  
+  /* Toolbar Interactions (Dark Mode) */
+  --macos-toolbar-hover-bg: rgba(255, 255, 255, 0.1);
+  --macos-toolbar-active-bg: rgba(255, 255, 255, 0.15);
 }
 
 /* Base MacOS Platform Styles */

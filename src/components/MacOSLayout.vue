@@ -250,6 +250,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .macos-layout {
+  /* Traffic Lights Metrics */
+  --macos-traffic-lights-safe-width: 72px;
+  --macos-traffic-lights-gap: 10px;
+
   display: flex;
   height: 100vh;
   width: 100%;
@@ -278,7 +282,7 @@ onBeforeUnmount(() => {
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  padding-left: 80px; /* Traffic lights safe zone approx 72px + 8px gap */
+  padding-left: calc(var(--macos-traffic-lights-safe-width) + var(--macos-traffic-lights-gap));
 }
 
 .macos-titlebar-back-btn {
@@ -294,14 +298,15 @@ onBeforeUnmount(() => {
   -webkit-app-region: no-drag;
   transition: background 0.2s, color 0.2s;
   background: transparent;
+  border: none;
 }
 
 .macos-titlebar-back-btn:hover {
-  background: rgba(0, 0, 0, 0.05); /* Very subtle hover */
+  background: var(--macos-toolbar-hover-bg);
 }
 
 .macos-titlebar-back-btn:active {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--macos-toolbar-active-bg);
 }
 
 @media (max-width: 700px) {
