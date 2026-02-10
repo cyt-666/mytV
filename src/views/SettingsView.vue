@@ -86,9 +86,10 @@ const loadSettings = async () => {
   }
 }
 
-const handleLogLevelChange = async (value: any) => {
+const handleLogLevelChange = async (value: string | number | boolean) => {
+  const level = value as string
   try {
-    await invoke('update_log_level', { level: value })
+    await invoke('update_log_level', { level })
     Message.success('日志级别已更新，重启应用后生效')
   } catch (error) {
     console.error('Failed to update log level:', error)

@@ -431,6 +431,8 @@ onBeforeUnmount(() => {
 
 .progress-section {
   margin-top: auto;
+  position: relative;
+  z-index: 5;
 }
 
 .progress-info {

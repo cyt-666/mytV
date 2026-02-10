@@ -671,6 +671,12 @@ const checkUserStatus = async () => {
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   color: var(--glass-text);
+  transition: all 0.3s ease;
+}
+
+.detailed-info:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 }
 
 .info-grid {

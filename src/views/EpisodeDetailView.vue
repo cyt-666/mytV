@@ -198,6 +198,12 @@ onMounted(() => {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--glass-shadow);
+  transition: all 0.3s ease;
+}
+
+.main-section:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 }
 
 .screenshot-wrapper {
@@ -205,12 +211,18 @@ onMounted(() => {
   aspect-ratio: 16/9;
   background: #000;
   position: relative;
+  overflow: hidden;
 }
 
 .screenshot {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.screenshot-wrapper:hover .screenshot {
+  transform: scale(1.05);
 }
 
 .screenshot-placeholder {
@@ -273,5 +285,7 @@ onMounted(() => {
 .actions {
   border-top: 1px solid var(--glass-border);
   padding-top: 24px;
+  display: flex;
+  gap: 12px;
 }
 </style>
