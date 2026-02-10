@@ -2,8 +2,16 @@
   <div class="macos-layout">
     <!-- Sidebar (Vibrant Material) -->
     <aside class="macos-sidebar">
-      <!-- Traffic Lights Drag Region -->
-      <div class="window-drag-region" data-tauri-drag-region></div>
+      <!-- Traffic Lights & Toolbar Region -->
+      <div class="window-drag-region" data-tauri-drag-region>
+        <div 
+          v-if="showGlobalBackButton"
+          class="macos-titlebar-back-btn"
+          @click.stop="handleGlobalBack"
+        >
+          <icon-left />
+        </div>
+      </div>
 
       <!-- Search Field -->
       <div class="sidebar-search-wrapper">
@@ -130,18 +138,10 @@
       </div>
     </aside>
 
-    <!-- Main Content -->
+      <!-- Main Content -->
     <main class="macos-main">
       <!-- Main Content Drag Region -->
       <div class="main-drag-region" data-tauri-drag-region></div>
-
-      <div 
-        v-if="showGlobalBackButton" 
-        class="global-back-btn" 
-        @click="handleGlobalBack"
-      >
-        <icon-arrow-left />
-      </div>
       
        <div class="content-scroll-container" ref="contentRef">
           <router-view v-slot="{ Component, route }">
@@ -156,14 +156,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, watch, nextTick, computed } from 'vue';
+import { ref, inject, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import type { Ref } from 'vue';
 import type { User } from '../types/api';
 import { 
   IconHome, IconStar, IconPlayCircle, IconApps, 
   IconClockCircle, IconBookmark, IconHistory, IconFolder, IconCalendar,
-  IconSearch, IconUser, IconSettings, IconExport, IconArrowLeft
+  IconSearch, IconUser, IconSettings, IconExport, IconLeft
 } from '@arco-design/web-vue/es/icon';
 
 const router = useRouter();
@@ -229,6 +229,23 @@ watch(route, async () => {
     contentRef.value.scrollTop = 0;
   }
 });
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.altKey && event.key === 'ArrowLeft') {
+    event.preventDefault();
+    if (showGlobalBackButton.value) {
+      handleGlobalBack();
+    }
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeyDown);
+});
 </script>
 
 <style scoped>
@@ -259,6 +276,32 @@ watch(route, async () => {
   height: 52px; /* Top area for traffic lights */
   width: 100%;
   -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  padding-left: 80px; /* Traffic lights safe zone approx 72px + 8px gap */
+}
+
+.macos-titlebar-back-btn {
+  height: 28px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px; /* Capsule shape */
+  color: var(--glass-text);
+  font-size: 14px;
+  cursor: default; /* Keep default cursor for toolbar items typically */
+  -webkit-app-region: no-drag;
+  transition: background 0.2s, color 0.2s;
+  background: transparent;
+}
+
+.macos-titlebar-back-btn:hover {
+  background: rgba(0, 0, 0, 0.05); /* Very subtle hover */
+}
+
+.macos-titlebar-back-btn:active {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 /* Search */
@@ -463,38 +506,5 @@ watch(route, async () => {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.4);
-}
-
-.global-back-btn {
-  position: absolute;
-  top: 16px;
-  left: 20px;
-  z-index: 10;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-radius: 50%;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--glass-text);
-  font-size: 16px;
-}
-
-.global-back-btn:hover {
-  background: var(--glass-overlay-bg);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  color: var(--glass-text);
-}
-
-.global-back-btn:active {
-  transform: scale(0.96);
 }
 </style>
