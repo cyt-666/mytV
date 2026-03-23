@@ -723,7 +723,7 @@ const checkUserStatus = async () => {
   top: 0;
   left: 0;
   right: 0;
-  height: 500px;
+  bottom: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
